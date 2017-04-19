@@ -1,0 +1,135 @@
+<template>
+    <div>
+        <div class="news-content">
+         <div class="news-shuoshuo">
+            <image class="img" src="http://ww1.sinaimg.cn/large/0060lm7Tgw1fbbe3xef2oj303h02owec.jpg"></image>
+            <!--<text  class="{{textClass}}">{{shuoshuoitem.subject}}</text>-->
+            <myrichtext   style="width:750;height:{{shuoshuoitem.height}}"> {{shuoshuoitem.myrichvalue}} </myrichtext>
+
+            </div>
+        </div>
+        <div class="news-bottom" >
+            <div class="news-txt">
+                 <text class="{{textClass}}"></text>
+             </div>
+              <div class="news-txt">
+                   <text class="{{textClass}}"></text>
+               </div>
+             <div class="news-share"  obj="{{shuoshuoitem.topicID}}">
+                 <image class="img" src="http://ww1.sinaimg.cn/large/0060lm7Tgw1fbbe3xef2oj303h02owec.jpg"></image>
+                  <text class="{{textClass}}">{{shuoshuoitem.usefulNum}}</text>
+             </div>
+            <div class="news-reply" obj="{{shuoshuoitem.topicID}}">
+                <image class="img" src="http://i1.piimg.com/567571/c046122d57e5da9e.png"></image>
+                 <text class="{{textClass}}">{{shuoshuoitem.totalReplyNum}}</text>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+    require('weex-components');
+    var modal = require('@weex-module/modal');
+    var stream = require('@weex-module/stream');
+    var storage = require('@weex-module/storage');
+    var weexEventModule =  require('@weex-module/weexEventModule');
+
+    module.exports = {
+        created:function(){
+           // var self = this;
+                this.themetype = this.$getConfig().themetype;
+//            weexEventModule.ShowLogI('shuoshuo_item.we','kjnkl5616515---'+this.$getConfig().themetype);
+           this. changeSkin();
+        },
+        data:{
+        shuoshuoitem:{
+         'userID':'2',
+          'userName':'股天乐',
+          'topicID':'1647303',
+          'totalReplyNum':'139',
+          'subject':'淘县首届实战高峰论坛，专属投资者的大盛会，报名走起！',
+          'postDate':'1490284800000',
+          'lastReplyDate':'1490284800000',
+          'thumbnail':'/img/forumthumbnail.png',
+          'usefulNum':'36',
+          height:120,
+          myrichvalue:[]
+        },
+
+          //'skintype':'nkjnjkkj'
+           themetype:0,
+            textClass:'dayclass'
+        },
+        methods:{
+            changeSkin: function() {
+//                    weexEventModule.ShowLogI('shuoshuo_item.we','this.themetype--->'+this.themetype);
+                    if(this.themetype==0){
+                               this.textClass='dayclass'
+                    }else{
+                               this.textClass='nightclass'
+                    }
+            }
+        },
+         ready(){
+             this. changeSkin();
+//         接收广播
+//            this.$on('changeSkin', function(e) {
+//                          weexEventModule.ShowLogI('shuoshuo_item.we','5615--->'+e.toString());
+//                         // self.title = e.title;
+//                          weexEventModule.ShowLogI('shuoshuo_item.we','1263155--->'+e.skintype);
+//             })
+         }
+
+    }
+</script>
+
+<style>
+   .news-bottom{
+        margin-top:15px;
+        margin-bottom:15px;
+        flex-direction:row;
+    }
+
+    .news-content,.news-bottom{
+        margin-left:20px;
+        margin-right:20px;
+    }
+
+    .news-reply,.news-txt,.news-share{
+        flex:1;
+        justify-content:center;
+        align-items:center;
+        flex-direction:row;
+    }
+
+    .news-shuoshuo{
+            flex:1;
+            justify-content:flex-start;
+            align-items:flex-start;
+            flex-direction:row;
+        }
+
+  .news-content{
+        margin:20px;
+
+    }
+     .img{
+            width:40px;
+            height:40px;
+        }
+  .txt{
+        opacity:0.3;
+        font-size:30px;
+    }
+
+       .dayclass{
+               color:#666666;
+               font-size:40px;
+               font-weight:bold;
+             }
+          .nightclass{
+                 color:#ff0000;
+                 font-size:40px;
+                 font-weight:bold;
+            }
+</style>

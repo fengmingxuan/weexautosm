@@ -1,0 +1,99 @@
+<template>
+    <div >
+    <list style="height: {{ctHeight}}">
+         <refresh class="refresh-view" display="{{refresh_display}}" onrefresh="onrefresh">
+             <loading-indicator class="indicator" ></loading-indicator>
+             <text class="refresh-arrow" style="text-align:center;color:rgb(238,162,54)" if="{{refresh_display==='hide'}}">
+                 {{msg}}
+             </text>
+         </refresh>
+        <cell repeat="{{meetingitem in meetingArray}}">
+
+                <meeting_item meetingitem="{{meetingitem}}"></meeting_item>
+
+
+        </cell>
+        </list>
+    </div>
+</template>
+
+<script>
+
+
+    require('./meeting_item.we')
+    var stream = require('@weex-module/stream');
+    var modal = require('@weex-module/modal');
+    var taoguba = require('../taoguba');
+    module.exports = {
+
+     data:{
+            refresh_display:'hide',
+            meetingArray:[],
+            test:'s-test',
+            msg:'下拉刷新',
+             ctHeight: 800,
+         },
+
+        methods:{
+            onrefresh:function(e){
+                var self = this;
+                self.msg = '下拉刷新';
+                self.refresh_display = 'show';
+                this.$call('timer','setTimeout',function(){
+                   self.refresh_display = 'hide';
+                },2000);
+                self.refresh();
+            },
+
+            refresh:function(){
+                     var self = this;
+                    stream.fetch({ 
+                            method:'GET', 
+                            url:taoguba.apiGetForums()+"blockID=1&pageNo=1&flag=0", 
+                             body:{
+                              "url":taoguba.apiGetForums(),
+                                     "blockID":"1",
+                                     "pageNo":"1",
+                                     "flag":"0"
+                              },
+                              headers:{
+                                 'Content-Type':'application/x-www-form-urlencoded',
+                              }
+                             },
+                         function(ret){ 
+                                    if(!ret.ok){ 
+//                                    modal.toast({"message":"Network Error!",'duration':2}); 
+                                   }else{ 
+                                        var json = JSON.parse(ret.data); 
+                                        for(var i = 0; i < json.dto.length;i++){
+                                            self.meetingArray.push(json.dto[i]);
+                                        }
+                             } },
+                             function(res){  }
+                                  );
+
+          }
+          },
+         created: function(){
+             var self = this;
+             self.refresh();
+        },
+        ready: function () {
+              this.ctHeight = this.$getConfig().env.deviceHeight;
+            }
+    }
+</script>
+
+<style>
+    .refresh-view{
+        height:100;
+        width:750;
+        align-items:center;
+    }
+
+    .indicator{
+        width:60;
+        height:60;
+        color:#889967;
+    }
+</style>

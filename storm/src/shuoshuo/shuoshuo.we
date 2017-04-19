@@ -1,0 +1,182 @@
+<template>
+    <div>
+    <list>
+         <refresh class="refresh-view" display="{{refresh_display}}" onrefresh="onrefresh">
+             <loading-indicator class="indicator" ></loading-indicator>
+             <text class="refresh-arrow" style="text-align:center;color:rgb(238,162,54)" if="{{refresh_display==='hide'}}">
+                 {{msg}}
+             </text>
+         </refresh>
+        <cell  repeat="{{shuoshuoitem in  shuoshuoArray}}">
+
+                <shuoshuo_item id="sub" shuoshuoitem="{{shuoshuoitem}}"></shuoshuo_item>
+
+            <div class="line"></div>
+        </cell>
+        </list>
+    </div>
+</template>
+
+<script>
+
+    require('weex-components');
+     require('../template/navbar.we')
+     require('./shuoshuo_item.we')
+    var stream = require('@weex-module/stream');
+    var modal = require('@weex-module/modal');
+     var weexEventModule =  require('@weex-module/weexEventModule');
+     var taoguba = require('../taoguba');
+       var globalEventModule = require('@weex-module/globalEvent');
+    module.exports = {
+
+     data:{
+            refresh_display:'hide',
+            shuoshuoArray:[],
+            test:'s-test',
+            msg:'下拉刷新',
+            textClass:'dayclass',
+            TAG:'shuoshuo.we'
+         },
+
+        methods:{
+            onrefresh:function(e){
+                var self = this;
+                self.msg = '下拉刷新';
+                self.refresh_display = 'show';
+                this.$call('timer','setTimeout',function(){
+                   self.refresh_display = 'hide';
+                },2000);
+                self.refresh();
+            },
+
+             refresh:function(){
+                       var self = this;
+                      stream.fetch({ 
+                              method:'GET', 
+                              url:taoguba.apiGetForums()+"blockID=1&pageNo=1&flag=0", 
+                               body:{
+                               "url":taoguba.apiGetForums(),
+                                       "blockID":"1",
+                                       "pageNo":"1",
+                                       "flag":"0"
+                                },
+                                headers:{
+                                   'Content-Type':'application/x-www-form-urlencoded',
+                                }
+                               },
+                           function(ret){ 
+                                      if(!ret.ok){ 
+  //                                    modal.toast({"message":"Network Error!",'duration':2}); 
+                                     }else{ 
+                                          var json = JSON.parse(ret.data); 
+                                          for(var i = 0; i < json.dto.length;i++){
+                                              //self.shuoshuoArray.push(json.dto[i]);
+                                               var stockitem = json.dto[i];
+
+
+                                               var myrichvaluejson={
+                                                   content:stockitem.userName+'对'+stockitem.userName+ '说：'+stockitem.subject,
+                                                   myrichvalue:[]
+                                               };
+
+                                               var myrich={};
+                                               myrich.strText = stockitem.userName;
+                                               myrich.strTextColor = '#ff0000';
+                                               myrich.strTextSize = 22;
+                                               myrich.onClickType=0;
+                                               myrichvaluejson.myrichvalue.push(myrich);
+
+                                               myrich={};
+                                               myrich.strText = '对';
+                                               myrich.strTextColor = '#000000';
+                                               myrich.strTextSize = 22;
+                                               myrich.onClickType=0;
+                                               myrichvaluejson.myrichvalue.push(myrich);
+
+                                               myrich={};
+                                               myrich.strText = stockitem.userName;
+                                               myrich.strTextColor = '#ff0000';
+                                               myrich.strTextSize = 22;
+                                               myrich.onClickType=0;
+                                               myrichvaluejson.myrichvalue.push(myrich);
+
+
+                                               myrich={};
+                                               myrich.strText = '说：'+stockitem.subject;
+                                               myrich.strTextColor = '#000000';
+                                               myrich.strTextSize = 22;
+                                               myrich.onClickType=0;
+                                               myrichvaluejson.myrichvalue.push(myrich);
+
+
+                                               stockitem.myrichvalue = myrichvaluejson;
+
+                                               stockitem.height = 120+100*stockitem.subject.length/20;
+                                               self.shuoshuoArray.push(stockitem);
+                                          }
+                               } },
+                               function(res){  }
+                                    );
+
+            },
+
+               getOptions: function() {
+                     var self = this;
+                     this.themetype = this.$getConfig().themetype
+                    // weexEventModule.ShowLogI(this.TAG,this.themetype);
+                     if(this.themetype==0){
+                            this.textClass='dayclass'
+                     }else{
+                            this.textClass='nightclass'
+                     }
+//发送广播
+//                     this.$broadcast('changeSkin', {
+//                               "skintype": "11"
+//                     })
+               }
+
+          },
+         created: function(){
+               var self = this;
+                 self.refresh();
+                  self.getOptions();
+        },
+
+          ready(){
+                    var self = this;
+//                     this.$vm('sub').changeSkin('11');//调用子控件方法
+//                    globalEventModule.addEventListener("mainlist_text_day_night",function(options){
+//                            weexEventModule.ShowLogI(self.TAG,options.toString());
+//
+//                          self.$broadcast('changeSkin', {
+//                                                        "skintype": "11"
+//                                              })
+//                   });
+                },
+    }
+</script>
+
+<style>
+    .refresh-view{
+        height:100px;
+        width: 750px;;
+        align-items:center;
+    }
+
+    .indicator{
+        width: 60px;;
+        height: 60px;
+        color:#889967;
+    }
+
+      .dayclass{
+           color:#666666;
+           font-size:40px;
+           font-weight:bold;
+         }
+      .nightclass{
+             color:#ff0000;
+             font-size:40px;
+             font-weight:bold;
+        }
+</style>

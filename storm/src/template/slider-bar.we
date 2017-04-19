@@ -1,0 +1,111 @@
+<template>
+    <div class="wrapper">
+       <navbar title="{{title}}"></navbar>
+       <div class="slider">
+            <slider class="embeds" append="tree" interval="1000" needloop="false" auto-play="false" onchange="onchange" index="{{sindex}}" >
+             <embed class="content" style="visibility:{{visibility}}" repeat="{{tabItems}}" src="{{src}}" type="weex"></embed>
+            </slider>
+       </div>
+        <div class="tabbar" append = "tree">
+            <slider-item repeat={{tabItems}} index={{index}} icon={{icon}} title={{title}} title-color={{titleColor}}></slider-item>
+        </div>
+    </div>
+</template>
+
+<style>
+    .wrapper {
+        width: 750;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+    }
+    .content {
+        position: absolute;
+        top: 0; left: 0;
+        right: 0;
+        bottom: 0;
+    }
+    .tabbar {
+        flex-direction: row;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 88;
+    }
+    .slider {
+        position: absolute;
+        flex-direction: row;
+        width: 750;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        margin-top: 45wx;
+        margin-bottom: 50wx;
+     }
+     .embeds{
+         width: 750;
+         top: 0;
+         left: 0;
+         right: 0;
+         bottom: 0;
+position: absolute;
+     }
+</style>
+
+<script>
+require('../template/slider-item.we')
+    module.exports = {
+        data: {
+          tabItems: [ ],
+          selectedIndex: 0,
+          selectedColor: '#ff0000',
+          unselectedColor: '#000000',
+          title:'',
+          sindex:0
+        },
+        created: function () {
+          this.selected(this.selectedIndex);
+
+          this.$on('tabItem.onClick',function(e){
+            var detail= e.detail;
+            this.selectedIndex = detail.index;
+            this.selected(detail.index);
+
+            var params = {
+              index: detail.index
+            };
+            this.$dispatch('tabBar.onClick', params);
+          });
+        },
+        methods: {
+            selected: function(index) {
+               var self =this;
+              for(var i = 0; i < this.tabItems.length; i++) {
+                var tabItem = this.tabItems[i];
+                if(i == index){
+                  this.sindex = i;
+                  tabItem.icon = tabItem.selectedImage;
+                  tabItem.titleColor = this.selectedColor;
+                  tabItem.visibility = 'visible';
+                  self.title = tabItem.title;
+                }
+                else {
+                  tabItem.icon = tabItem.image;
+                  tabItem.titleColor = this.unselectedColor;
+                  tabItem.visibility = 'hidden';
+                }
+              }
+            },
+            onchange:function(params) {
+                 var index = params.index;
+                 this.sindex = index;
+                 this.selected(index);
+
+            }
+        }
+    }
+</script>

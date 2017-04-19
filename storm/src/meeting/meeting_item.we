@@ -1,0 +1,158 @@
+<template>
+    <div class="item" onclick="todetail">
+        <div class="news-content">
+            <text  class="meeting-date">2017-09-01（周一）</text>
+        </div>
+
+        <div class="line"></div>
+
+        <div class="meeting-stock">
+            <text  class="meeting-label">股市事件：</text>
+            <text  class="meeting-s-content">2017年1月份VPI公布名单</text>
+        </div>
+        <div class="meeting-stock">
+            <text  class="meeting-label">影响个股：</text>
+            <text  class="meeting-s-content">山大华特，天目药业，付翔股份</text>
+        </div>
+        <div class="meeting-stock">
+            <text  class="meeting-label">影响概念：</text>
+            <text  class="meeting-s-content">山大华特</text>
+        </div>
+        <div class="news-bottom" >
+            <div class="news-txt">
+
+             </div>
+              <div class="news-txt">
+
+               </div>
+                <div class="news-txt">
+
+               </div>
+             <div class="news-share" >
+
+             </div>
+            <div class="news-reply" onclick="topinglun" >
+                <image class="img" src="http://i1.piimg.com/567571/c046122d57e5da9e.png"></image>
+                 <text class="txt">{{meetingitem.usefulNum}}</text>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+var taoguba = require('../taoguba');
+    var navigator = require('@weex-module/navigator')
+    module.exports = {
+        data:{
+              meetingitem:{
+                  'userID':'2',
+                  'userName':'股天乐',
+                  'topicID':'1647303',
+                  'totalReplyNum':'139',
+                  'subject':'淘县首届实战高峰论坛，专属投资者的大盛会，报名走起！',
+                  'postDate':'1490284800000',
+                  'lastReplyDate':'1490284800000',
+                  'thumbnail':'/img/forumthumbnail.png',
+                  'usefulNum':'36'
+            }
+
+        },
+      methods:{
+            topinglun:function(event) {
+               console.log('topinglun');
+               var name = "meeting/meeting_pinglun";
+               navigator.push({
+                   url: taoguba.getDefaultUrl(name),
+                   animated: "true"
+               }, event => {
+
+               });
+            },
+            todetail:function(event) {
+               console.log('todetail');
+               var name = "meeting/meetingdetail";
+               navigator.push({
+                   url: taoguba.getDefaultUrl(name),
+                   animated: "true"
+               }, event => {
+
+               });
+            }
+       }
+
+    }
+</script>
+
+<style>
+    .item{
+     border-width: 1;
+     border-color: #666666;
+     border-radius: 5px;
+     background-color: #ffffff;
+     margin: 8;
+     padding: 10;
+
+    }
+
+    .news-content{
+           margin-left:20;
+           margin-right:20;
+       }
+    .meeting-date{
+        font-size: 20wx;
+        font-weight: bold;
+        color: #000000;
+    }
+
+     .line{
+       height: 2;
+       background-color: #666666;
+       margin-left: 10;
+       margin-right: 10;
+       margin-top: 10;
+       margin-bottom: 10;
+
+     }
+
+     .meeting-stock{
+        margin-left:20;
+        margin-right:20;
+        margin-top:15;
+        margin-bottom:15;
+        flex: 1;
+        flex-direction: row;
+     }
+
+    .meeting-label{
+      font-size: 18wx;
+      font-weight: bold;
+      color: #000000;
+   }
+
+   .meeting-s-content{
+      font-size: 16wx;
+      color: #666666;
+      justify-content:flex-start;
+      align-items:flex-start;
+      flex:1;
+   }
+.news-reply,.news-txt,.news-share{
+        flex:1;
+        justify-content:center;
+        align-items:center;
+        flex-direction:row;
+    }
+.news-bottom{
+        margin-top:15;
+        margin-bottom:15;
+        flex-direction:row;
+    }
+    .img{
+                width:40;
+                height:40;
+            }
+      .txt{
+            opacity:0.3;
+            font-size:30;
+        }
+</style>

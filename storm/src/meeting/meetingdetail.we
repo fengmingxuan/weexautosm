@@ -1,0 +1,66 @@
+<template>
+    <div >
+     <navbar title="行业会议"></navbar>
+    <list>
+    <cell>
+        <meeting_item></meeting_item>
+    </cell>
+    <cell>
+       <taoguba-wxc-panel title="最新评论"/>
+    </cell>
+    <cell>
+        <meeting_pinglun_item></meeting_pinglun_item>
+    </cell>
+     <cell>
+        <meeting_pinglun_item></meeting_pinglun_item>
+     </cell>
+    </list>
+    </div>
+</template>
+
+<script>
+    require('../template/taoguba-wxc-panel.we')
+    require('./meeting_item.we')
+    require('./meeting_pinglun_item.we')
+    var stream = require('@weex-module/stream');
+    var modal = require('@weex-module/modal');
+    var taoguba = require('../taoguba');
+    module.exports = {
+
+     data:{
+
+
+
+         },
+
+        methods:{
+
+
+            refresh:function(){
+
+
+             }
+          },
+         created: function(){
+             var self = this;
+             self.refresh();
+        },
+        ready: function () {
+
+            }
+    }
+</script>
+
+<style>
+    .refresh-view{
+        height:100;
+        width:750;
+        align-items:center;
+    }
+
+    .indicator{
+        width:60;
+        height:60;
+        color:#889967;
+    }
+</style>

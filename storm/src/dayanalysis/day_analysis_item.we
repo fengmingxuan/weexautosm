@@ -1,0 +1,163 @@
+<template>
+    <div onclick="openshuoshuo" ref="{{stockitem.topicID}}">
+        <div class="news-content">
+            <text  style="font-size:20wx;font-weight: bold"> {{stockitem.subject}}</text>
+        </div>
+        <div class="news-content">
+            <text class="maxline" > {{stockitem.scontent}}</text>
+        </div>
+        <div class="news-bottom" >
+              <div class="news-date">
+                   <text class="txt"> {{formatTime()}}</text>
+               </div>
+              <div class="news-share">
+               </div>
+            <div class="news-reply" >
+                 <text class="txt">{{stockitem.userName}}</text>
+            </div>
+        </div>
+        <div class="line"></div>
+    </div>
+</template>
+
+<script>
+    require('weex-components');
+    var modal = require('@weex-module/modal');
+    var stream = require('@weex-module/stream');
+    var storage = require('@weex-module/storage');
+ var weexEventModule =  require('@weex-module/weexEventModule');
+var taoguba = require('../taoguba');
+var navigator = require('@weex-module/navigator')
+ var date = require('../common/date');
+    module.exports = {
+        created:function(){
+            this.platform = this.$getConfig().env.platform;
+        },
+        data:{
+            stockitem:{
+                 "subject":"乒乓球亚锦赛-马龙输球出局 丁宁无缘四强",
+                 "content":"今天，2017年乒乓球亚锦赛在江苏无锡展开男子单打1/16决赛的争夺，马龙1比3不敌韩国选手郑尚恩，无缘16强，四局的比分为9-11/8-11/11-6/6-11。中国队剩余的四位男单都顺利晋级八强。张继科以3比0横扫日本的大岛祐哉晋级。许昕、樊振东和林高远也一同携手过关。...【开心一刻018】 ",
+                 "topicID":1504558,
+                 "userID":1724850,
+                 "userName":"开心一刻018",
+                 "postDateNum":20170417,
+                 "creator":null,
+                 "creatorUserID":null,
+                 "createdt":1492419462000,
+                 "countNum":0,
+                 "feedID":0,
+                 scontent:''
+            },
+             platform:'unknown',
+
+
+        },
+        methods:{
+            openshuoshuo:function(e) {
+                 var topicID = e.target.attr.ref;
+                  var url = taoguba.getMTaoguba('topicID='+topicID+'&replyID=0&pageNo=1');
+                 var optionJson = {
+                   'TOPIC_ID_KEY': topicID,
+                   'TOPIC_REPLY_ID_KEY': 0,
+                     };
+                 var params = {
+                             'url': url,
+                             'animated': 'true',
+                             'options':{'skinType':'0'}
+                       };
+                     if (typeof window === 'object') {
+                     //http://m.taoguba.com.cn/mViewTopic?topicID=1293091&replyID=890&pageNo=1
+                     //https://m.taoguba.com.cn/Article/1657029/1
+
+                       navigator.push(params,event => {
+                                  //sunccess
+                            } );
+                     }else{
+//                     weexNavigator.push(params,event => {
+//                                                       //sunccess
+//                                                 } );
+                        var platform = this.$getConfig().env.platform;
+                        if (platform == 'iOS') {
+                          var event_ios = require('@weex-module/event')
+                          event_ios.pushViewController('TopicViewController',{'topicID':topicID,'replyID':0});
+                        }
+                        else {
+                       weexEventModule.startOtherNativeActivity('com.taoguba.app.activity.TaogubaTopicActivity',optionJson);
+                        }
+                    }
+                },
+                 formatTime :function(){
+                    var time = this.stockitem.createdt;
+                    var strTime;
+                    if (this.platform == 'iOS') {
+                      var event_ios = require('@weex-module/event');
+                      strTime =  event_ios.dateStringFromNumber(time.toString());
+                     }
+                     else if (typeof window === 'object') {
+                        strTime =  date.formatDate(new Date(time),"yy-MM-dd HH:mm");
+                     }else{
+                         //  strTime = weexEventModule.TimeFormate("1", time,"yy-MM-dd HH:mm");
+                     strTime =  date.formatDate(new Date(time),"yy-MM-dd HH:mm");
+                     }
+
+    //                weexEventModule.ShowLogI("","strTime-->:"+strTime);
+                    return strTime;
+                 }
+
+        }
+    }
+</script>
+
+<style>
+   .news-bottom{
+        margin-top:15;
+        margin-bottom:15;
+        flex-direction:row;
+    }
+
+    .news-content,.news-bottom{
+        margin-left:20;
+        margin-right:20;
+    }
+
+    .news-reply,.news-txt,.news-share{
+        flex:1;
+        justify-content:flex-end;
+        align-items:flex-end;
+        flex-direction:row;
+    }
+
+     .news-date{
+            flex:2;
+            justify-content:flex-start;
+            align-items:flex-start;
+            flex-direction:row;
+        }
+
+  .news-content{
+        margin:20;
+
+    }
+     .img{
+            width:40;
+            height:40;
+        }
+  .txt{
+        color: #666666;
+        font-size:14wx;
+
+    }
+    .line{
+       height: 2;
+       background-color: #666666;
+       margin-left: 10;
+       margin-right: 10;
+       margin-top: 10;
+       margin-bottom: 10;
+
+     }
+     .maxline{
+         font-size:18wx;
+
+     }
+</style>

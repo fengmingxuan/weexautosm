@@ -1,0 +1,134 @@
+<template>
+   <div class="content">
+          <div class="tabclass" >
+                <div class="tabclass-item" repeat="{{item in buttomData}}" onclick="{{setIndex(item.index)}}">
+                    <text class="{{item.itemNameColor}}">{{item.itemName}}</text>
+                </div>
+           </div>
+          <slider class="slider" append="tree" interval="1000" needloop="false" auto-play="false" onchange="onchange" index="{{indexMetting}}">
+                        <meetingtime></meetingtime>
+                        <meetingtime/></meetingtime>
+                        <meetingtime/></meetingtime>
+           </slider>
+
+   </div>
+</template>
+
+<script>
+
+
+   var weexModalUIModule =  require('@weex-module/weexModalUIModule');
+  require('weex-components');
+  var img0 = '//gw.alicdn.com/tps/i2/TB1DpsmMpXXXXabaXXX20ySQVXX-512-512.png_400x400.jpg';
+  var img1 = '//gw.alicdn.com/tps/i1/TB1M3sQMpXXXXakXXXXApNeJVXX-360-360.png';
+  module.exports = {
+    data: {
+      eventCnt: 0,
+      togglePlayMsg: 'pause',
+      indexMetting:0,
+      title:'股市直播',
+      buttomData:[
+            {
+                index:0,
+                itemName:'其它时间',
+                itemNameColor:"itemTexclass-0",
+               rlUnSelect:"http://gtms01.alicdn.com/tps/i1/TB1qw.hMpXXXXagXXXX9t7RGVXX-46-46.png"
+            },
+            {
+                index:1,
+                itemName:'本周股市动向\n(09.01-10.07)',
+                itemNameColor:"itemTexclass-0",
+               UrlUnSelect:"http://gtms01.alicdn.com/tps/i1/TB1qw.hMpXXXXagXXXX9t7RGVXX-46-46.png"
+            },
+            {
+                index:2,
+                itemName:'上周股市动向\n(10.01-10.07)',
+                itemNameColor:"itemTexclass-0",
+            }
+      ]
+    },
+    methods: {
+      onchange: function(params) {
+             var index = params.index;
+                this.setIndex(index);
+      },
+      setIndex :function(index) {
+            this.indexMetting = index;
+            for(var i = 0; i < this.buttomData.length; i++) {
+                var tabItem = this.buttomData[i];
+                if(i == index){
+                  tabItem.imgUrl = tabItem.imgUrlSelect;
+                  tabItem.itemNameColor = "itemTexclass-select-0";
+                }else {
+                  tabItem.imgUrl = tabItem.imgUrlUnSelect;
+                  tabItem.itemNameColor = this.itemNameColor;
+            }
+          }
+      }
+    },
+    created(){
+//        weexModalUIModule.toast("1515");
+    },
+     ready(){
+        this.indexMetting = 0;
+        this.setIndex( this.indexMetting);
+     },
+  };
+</script>
+
+<style>
+  .slider {
+    position: absolute;
+    flex-direction: row;
+    width: 750wx;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin-top: 85wx;
+    margin-bottom: 50wx;
+ }
+.content{
+  flex-direction:column;
+  width: 750;
+}
+.tabclass{
+  width: 750;
+  height:85wx;
+  flex-direction: row;
+  justify-content:flex-end;
+  background-color: #eeeee;
+
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+.tabclass-item{
+    flex: 1;
+    flex-direction: row;
+    align-items: center;
+    justify-content:center;
+}
+.img{
+    width: 20wx;
+    height: 20wx;
+}
+.itemTexclass{
+    margin-left: 5wx;
+    font-size: 13wx;
+    color: #666666;
+     flex: 1;
+}
+.itemTexclass-0{
+    color: #666666;
+}
+.itemTexclass-select-0{
+    color: #00BDFF;
+}
+.itemTexclass-1{
+    color: #666666;
+}
+.itemTexclass-select-1{
+    color: #666666;
+}
+</style>
