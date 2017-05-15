@@ -1,33 +1,31 @@
 <template>
-    <div onclick="todetail">
+    <div  onclick="todetail" class="itemClass-{{skinType}}">
+        <div class="time" if="{{stockitem.showtime}}">
+            <text class="createdt createdt-{{skinType}}">{{formatTime(stockitem.postdate)}}</text>
+        </div>
         <div class="news-content">
-        <!--if (typeof window === 'object') {-->
-        <!--<text>{{stockitem.lastReplyDate}} {{stockitem.subject}}  {{stockitem.subject}}</text>-->
-        <!--}else{-->
-        <myrichtext   style="width:750;height:{{stockitem.height}}"> {{stockitem.myrichvalue}} </myrichtext>
-        <!--}-->
+            <!--<text style="visibility:{{stockitem.h5visibility}}">{{formatTime(stockitem.postdate)}} {{stockitem.subject}}  {{stockitem.subject}}</text>-->
+            <mystockview if={{!is_ios_text}}
+                        style="lines:3;visibility:{{stockitem.visibility}}">
+                {{stockitem.myrichvalue}}
+            </mystockview>
 
+            <!--<myrichtext if={{!is_ios_text}} onclick="todetail"-->
+                         <!--style="height:80wx ;visibility:{{stockitem.visibility}}">-->
+                <!--{{stockitem.myrichvalue}}-->
+            <!--</myrichtext>-->
+            <myrichtext if={{is_ios_text}} class="myrichtext">{{stockitem.myrichvalue}}</myrichtext>
         </div>
 
-        <div class="news-bottom" >
-            <div class="news-txt">
-
-             </div>
-              <div class="news-txt">
-
-               </div>
-                <div class="news-txt">
-
-               </div>
-             <div class="news-share"  obj="{{stockitem.topicID}}">
-                 <image class="img" src="http://ww1.sinaimg.cn/large/0060lm7Tgw1fbbe3xef2oj303h02owec.jpg"></image>
-                  <text class="txt">{{stockitem.usefulNum}}</text>
-             </div>
-            <div class="news-reply" obj="{{stockitem.topicID}}">
-                <image class="img" src="http://i1.piimg.com/567571/c046122d57e5da9e.png"></image>
-                 <text class="txt">{{stockitem.totalReplyNum}}</text>
+        <div class="news-bottom">
+            <div style="flex-direction: row;height: 40wx;align-items: center;" onclick="toshare">
+                <image class="img" src="{{getImgUrl('././images/fenxiang_grey.png')}}" onclick="toshare"></image>
+                <text class="numClass textClass-{{skinType}}" onclick="toshare">分享</text>
             </div>
+            <image class="img" src="{{getImgUrl('././images/pinglun.png')}}"></image>
+            <text class="numClass textClass-{{skinType}}">{{stockitem.tucaoNum}}</text>
         </div>
+        <div class="lineClass lineClass-{{skinType}}"></div>
     </div>
 </template>
 
@@ -36,95 +34,265 @@
     var date = require('../common/date');
     var taoguba = require('../taoguba');
     var navigator = require('@weex-module/navigator')
+    var weexNavigator = require('@weex-module/weexNavigatorModule')
+    var weexEventModule = require('@weex-module/weexEventModule');
+    var weexModalUIModule = require('@weex-module/weexModalUIModule');
     module.exports = {
-        created:function(){
-          console.log('news');
+        created: function () {
+            this.platform = this.$getConfig().env.platform;
+            if (this.platform == 'iOS') {
+                this.is_ios_text = 1;
+            }
+            var cskinType = this.$getConfig().skinType;
+            if (cskinType == undefined) {
+                cskinType = taoguba.getUrlParam('skinType');
+            }
+            this.skinType = cskinType;
         },
-        data:{
-        stockitem:{
-          'userID':'2',
-          'userName':'股天乐',
-          'topicID':'1647303',
-          'totalReplyNum':'139',
-          'subject':'淘县首届实战高峰论坛，专属投资者的大盛会，报名走起！',
-          'postDate':'1490284800000',
-          'lastReplyDate':'1490284800000',
-          'thumbnail':'/img/forumthumbnail.png',
-          'usefulNum':'36',
-          height:100,
-           myrichvalue:[]
+        data: {
+            is_ios_text: 0,
+            platform: '',
+            stockitem: {
+                skinType: 0,
+                h5visibility: 'hidden',
+                visibility: 'visible',
+                "seq": 0,
+                "type": "S",
+                "source": "N",
+                "feedid": 2920388,
+                "postdate": 1492571310000,
+                "topID": 2920388,
+                "creatdt": 1492571339000,
+                "tucaoNum": 0,
+                "subject": "高田援助方延长收购谈判",
+                "newsType": 0,
+                "info": {
+                    "seq": 0,
+                    "createDT": null,
+                    "creator": null,
+                    "modifyDT": null,
+                    "modifier": null,
+                    "feedID": 2920388,
+                    "userID": 1100914,
+                    "userName": "股市直播",
+                    "content": "高田援助方延长收购谈判（经济参考报）",
+                    "msgType": "N",
+                    "usefulNum": 0,
+                    "bestNum": 0,
+                    "commentAllCount": 0,
+                    "commentCount": 0,
+                    "transferAllCount": 0,
+                    "transferCount": 0,
+                    "checkFlag": "Y",
+                    "timeLine": 1492571310000,
+                    "refMsgID": 0,
+                    "deleteflag": "N",
+                    "ipAddress": "0",
+                    "monthGoldNum": 0,
+                    "fromType": "W",
+                    "totalPcPoint": 0,
+                    "recomstock": null,
+                    "zhihuSeq": 0,
+                    "portrait": null,
+                    "refMsgUserID": 0,
+                    "refMsgUserName": null,
+                    "zhifuQuestion": null,
+                    "questionState": "N",
+                    showtime: false
+                },
+                height: 100,
+                myrichvalue: [],
+
+            },
+            skinType: 0
+
+
         },
+        methods: {
+            toshare: function (e) {
+//                    {
+//                    "shareContent":"淘股吧是中国知名的移动互联投资社交化平台",
+//                    "shareUrl":"http://m.taoguba.com.cn/downloadApp",
+//                    "shareTitle":"v_5.5.5",
+//                    "ShareImgResID":"",
+//                    "ShareImgUrl":"",
+//                    "SHARE_MEDIA":["QZONE","WEIXIN"]
+//                    }
 
+                var self = this;
+                var shareUrl;
+                var type = self.stockitem.type;
 
+                if ("T" == type) {
+                    shareUrl = taoguba.getArticle() + self.stockitem.info.feedID + '/1';
+                } else {
+                    shareUrl = taoguba.getShuoShuo() + 'userID=1100914&feedID=' + self.stockitem.info.feedID;
+                }
 
-        },
-        methods:{
-                formatTime :function(){
-                var time ;
-                time = this.stockitem.lastReplyDate;
-                var strTime;
-                if (this.platform == 'iOS') {
-                  var event_ios = require('@weex-module/event');
-                  strTime =  event_ios.dateStringFromNumber(time.toString());
-                 }
-                 else if (typeof window === 'object') {
-                    strTime =  date.formatDate(new Date(time),"yy-MM-dd");
-                 }else{
-                   // strTime = weexEventModule.TimeFormate("3", time,"");
-                     strTime =  date.formatDate(new Date(time),"yy-MM-dd");
-                 }
-
-//                weexEventModule.ShowLogI("","strTime-->:"+strTime);
+                var shareJson = {
+                    "shareContent": self.stockitem.myrichvalue.content,
+                    "shareUrl": shareUrl,
+                    "shareTitle": "股市直播",
+                    "ShareImgResID": "",
+                    "ShareImgUrl": "",
+                    "SHARE_MEDIA": []
+                };
+                weexModalUIModule.Share(shareJson);
+                console.log('toshare');
+            },
+            formatTime: function (time) {
+                var strTime = date.formatDate(new Date(time), "yyyy-MM-dd");
                 return strTime;
-             },
+            },
 
-             todetail:function(event) {
-             console.log('stockdetail');
-                var name = "stocknews/stockdetail";
-                navigator.push({
-                    url: taoguba.getDefaultUrl(name),
-                    animated: "true"
-                }, event => {
+            todetail: function (event) {
+                var self = this;
+                console.log('stockdetail');
 
-                });
-             }
+                var type = self.stockitem.type;
+                if ("T" == type) {
+                    if (self.platform == 'iOS') {
+                        var event_ios = require('@weex-module/event')
+                        event_ios.pushViewController('TopicViewController', {
+                            'topicID': self.stockitem.topID,
+                            'replyID': 0
+                        });
+                    } else {
+                        var optionJson = {
+                            'TOPIC_ID_KEY': self.stockitem.topID,
+                            'TOPIC_REPLY_ID_KEY': 0,
+                        };
+                        weexEventModule.startOtherNativeActivity('com.taoguba.app.activity.TaogubaTopicActivity', optionJson);
+                    }
+                } else {
+                    var name = "stocknews/stockdetail";
+                    var infocontent = self.stockitem.info.content;
+                    if (infocontent == null || infocontent == 'null') {
+                        infocontent = '';
+                    }
+                    var subject = self.stockitem.subject;
+                    if (subject == null || subject == 'null') {
+                        subject = '';
+                    }
+                    infocontent = '【'+subject+'】'+infocontent;
+                    var url = taoguba.getDefaultUrl(name) + '?topicID=' + self.stockitem.topID + '&userID=' + self.stockitem.info.userID + '&refMsgID=' + self.stockitem.info.refMsgID + '&refMsgUserID=' + self.stockitem.info.refMsgUserID + '&type=' + self.stockitem.type + '&pageSize=3&userName=' + encodeURI(self.stockitem.info.userName) + '&creatdt=' + self.stockitem.creatdt + '&content=' + encodeURIComponent(infocontent);
+                    var params = {
+                        'url': url,
+                        'animated': 'true',
+                        'options': {
+                            'topicID': self.stockitem.topID,
+                            'type': self.stockitem.type,
+                            'pageSize': 3,
+                            'userID': self.stockitem.info.userID,
+                            'refMsgID': self.stockitem.info.refMsgID,
+                            'refMsgUserID': self.stockitem.info.refMsgUserID,
+                            'userName': encodeURI(self.stockitem.info.userName),
+                            'content': encodeURIComponent(infocontent),
+                            'creatdt': self.stockitem.creatdt
+                        }
+                    };
+                    if (typeof window === 'object') {
+                        navigator.push(params, event => {
+                            //sunccess
+                        });
+                    } else {
+                        if (self.platform == 'android') {
+                            weexNavigator.push(params, event => {
+                            });
+                        } else {
+                            var navigator = require('@weex-module/navigator')
+                            navigator.push(params, event => {
+                            });
+                        }
+                    }
+                }
+            },
+            getImgUrl: function (url) {
+                if (this.platform == 'iOS') {
+                    url = url.replace('./', '');
+                }
+                return taoguba.getImageUrl(url);
+            },
         }
     }
 </script>
 
 <style>
-   .news-bottom{
-        margin-top:15;
-        margin-bottom:15;
-        flex-direction:row;
+    .itemClass-0:active {
+        background-color: #dddddd
     }
 
-    .news-content{
-        margin-left:20;
-        margin-right:20;
-
-    }
- .news-bottom{
-        margin-left:20;
-        margin-right:20;
-    }
-    .news-reply,.news-txt,.news-share{
-        flex:1;
-        justify-content:center;
-        align-items:center;
-        flex-direction:row;
+    .itemClass-1:active {
+        background-color: #132237
     }
 
-  .news-content{
-        margin:20;
-
+    .myrichtext {
+        /*margin-top:0wx;*/
     }
-     .img{
-            width:40;
-            height:40;
-        }
-  .txt{
-        opacity:0.3;
-        font-size:30;
+
+    .news-bottom {
+        margin-right: 10wx;
+        flex: 1;
+        flex-direction: row;
+        justify-content: flex-end;
+        height: 40wx;
+        align-items: center;
+    }
+
+    .news-content {
+        margin-top: 5wx;
+        margin-left: 10wx;
+        margin-right: 10wx;
+    }
+
+    .numClass {
+        font-size: 13wx;
+        margin-left: 2wx;
+        /*margin-top: 3wx;*/
+    }
+
+    .textClass-0 {
+        color: #BBBBBB;
+    }
+
+    .textClass-1 {
+        color: #666666;
+    }
+
+    .img {
+        width: 18wx;
+        height: 18wx;
+        margin-left: 20wx;
+    }
+
+    .lineClass {
+        height: 2wx;
+    }
+
+    .lineClass-0 {
+        background-color: #eeeeee;
+    }
+
+    .lineClass-1 {
+        background-color: #0e1929;
+    }
+
+    .time {
+        align-items: center;
+        justify-content: center;
+        height: 20wx;
+        margin-top: 10wx;
+    }
+
+    .createdt {
+        font-size: 18wx;
+    }
+
+    .createdt-0 {
+        color: #666666;
+    }
+
+    .createdt-1 {
+        color: #999999;
     }
 </style>

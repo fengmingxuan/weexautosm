@@ -1,135 +1,315 @@
 <template>
-    <div>
+    <div class="item" onclick="onclickTucao">
+        <div class="time">
+            <text class="createdt createdt-{{skinType}}" if="{{shuoshuoitem.newrefresh}}">
+                {{formatTime(shuoshuoitem.refreshtime)}}
+            </text>
+        </div>
         <div class="news-content">
-         <div class="news-shuoshuo">
-            <image class="img" src="http://ww1.sinaimg.cn/large/0060lm7Tgw1fbbe3xef2oj303h02owec.jpg"></image>
-            <!--<text  class="{{textClass}}">{{shuoshuoitem.subject}}</text>-->
-            <myrichtext   style="width:750;height:{{shuoshuoitem.height}}"> {{shuoshuoitem.myrichvalue}} </myrichtext>
+            <div class="news-image">
+                <image class="logo" if="{{shuoshuoitem.selfuser==0}}" src="{{shuoshuoitem.img}}"></image>
+            </div>
+            <div class="news-shuoshuo">
+                <div class="rightname rightname-{{shuoshuoitem.selfuser}}">
+                    <text class="userName userName-{{skinType}}">{{shuoshuoitem.userName}}</text>
+                </div>
 
+                <div class="shuoshuo  shuoshuo_{{platform}} shuoshuo-{{shuoshuoitem.selfuser}}-{{skinType}}">
+                    <div class="center_content_class center_content_class-{{shuoshuoitem.selfuser}}-{{skinType}}">
+                        <text class="content content-{{shuoshuoitem.selfuser}}-{{skinType}}">{{shuoshuoitem.content}}
+                        </text>
+                        <text class="refContent refContent-{{shuoshuoitem.selfuser}}-{{skinType}}"
+                              if="{{shuoshuoitem.refContent.length>0}}">{{shuoshuoitem.refContent}}
+                        </text>
+                    </div>
+                </div>
+            </div>
+            <div class="news-image">
+                <image class="logo" if="{{shuoshuoitem.selfuser==1}}" src="{{shuoshuoitem.img}}"></image>
             </div>
         </div>
-        <div class="news-bottom" >
-            <div class="news-txt">
-                 <text class="{{textClass}}"></text>
-             </div>
-              <div class="news-txt">
-                   <text class="{{textClass}}"></text>
-               </div>
-             <div class="news-share"  obj="{{shuoshuoitem.topicID}}">
-                 <image class="img" src="http://ww1.sinaimg.cn/large/0060lm7Tgw1fbbe3xef2oj303h02owec.jpg"></image>
-                  <text class="{{textClass}}">{{shuoshuoitem.usefulNum}}</text>
-             </div>
-            <div class="news-reply" obj="{{shuoshuoitem.topicID}}">
-                <image class="img" src="http://i1.piimg.com/567571/c046122d57e5da9e.png"></image>
-                 <text class="{{textClass}}">{{shuoshuoitem.totalReplyNum}}</text>
-            </div>
-        </div>
+
     </div>
 </template>
 
 <script>
     require('weex-components');
+    var date = require('../common/date');
     var modal = require('@weex-module/modal');
+    var event = require('@weex-module/event');
     var stream = require('@weex-module/stream');
     var storage = require('@weex-module/storage');
-    var weexEventModule =  require('@weex-module/weexEventModule');
-
+    var weexEventModule = require('@weex-module/weexEventModule');
+    var taoguba = require('../taoguba');
     module.exports = {
-        created:function(){
-           // var self = this;
-                this.themetype = this.$getConfig().themetype;
-//            weexEventModule.ShowLogI('shuoshuo_item.we','kjnkl5616515---'+this.$getConfig().themetype);
-           this. changeSkin();
-        },
-        data:{
-        shuoshuoitem:{
-         'userID':'2',
-          'userName':'股天乐',
-          'topicID':'1647303',
-          'totalReplyNum':'139',
-          'subject':'淘县首届实战高峰论坛，专属投资者的大盛会，报名走起！',
-          'postDate':'1490284800000',
-          'lastReplyDate':'1490284800000',
-          'thumbnail':'/img/forumthumbnail.png',
-          'usefulNum':'36',
-          height:120,
-          myrichvalue:[]
-        },
-
-          //'skintype':'nkjnjkkj'
-           themetype:0,
-            textClass:'dayclass'
-        },
-        methods:{
-            changeSkin: function() {
-//                    weexEventModule.ShowLogI('shuoshuo_item.we','this.themetype--->'+this.themetype);
-                    if(this.themetype==0){
-                               this.textClass='dayclass'
-                    }else{
-                               this.textClass='nightclass'
-                    }
+        created: function () {
+            var self = this;
+            this.platform = this.$getConfig().env.platform;
+            var skinType = this.$getConfig().skinType;
+            if (skinType == undefined) {
+                skinType = 0;
             }
+            self.skinType = skinType;
         },
-         ready(){
-             this. changeSkin();
-//         接收广播
-//            this.$on('changeSkin', function(e) {
-//                          weexEventModule.ShowLogI('shuoshuo_item.we','5615--->'+e.toString());
-//                         // self.title = e.title;
-//                          weexEventModule.ShowLogI('shuoshuo_item.we','1263155--->'+e.skintype);
-//             })
-         }
+        data: {
+            platform: '',
+            shuoshuoitem: {
+                "seq": null,
+                "feedID": 2920462,
+                "type": null,
+                "topicID": 2920324,
+                "createdt": 1492571764000,
+                "content": "@开心一刻018 大在",
+                "userName": "帅八戒",
+                "userID": 3881,
+                "img": null,
+                "upNum": 0,
+                "refUserName": "股市直播",
+                "refUserID": 1100914,
+                "refContent": "市场再现个股“闪崩”，宁波精达、凯恩股份跌停。",
+                "fromType": "TC",
+                height: 120,
+                myrichvalue: [],
+                newrefresh: false,
+                refreshtime: 1492571764000,
+                selfuser: 0,//是否登陆用户
+            },
+            skinType: 0,
+
+
+        },
+        methods: {
+
+            formatTime: function (time) {
+                var strTime;
+                if (this.platform == 'android') {
+                    strTime = weexEventModule.TimeFormate("1", time, "yyyy-MM-dd HH:mm");
+                } else {
+                    strTime = date.formatDate(new Date(time), "yyyy-MM-dd hh:mm");
+                }
+                return strTime;
+            },
+            onclickTucao: function () {
+                if (this.platform == 'iOS') {
+                    var json = {
+                        feedID: this.shuoshuoitem.topicID,
+                        refMsgUserID: this.shuoshuoitem.refUserID,
+                        refMsgID: this.shuoshuoitem.topicID,
+                        type: 'O',
+                        topicID: this.shuoshuoitem.topicID,
+                        preText: "@" + this.shuoshuoitem.userName + "  ",
+                    }
+                    event.enterToEdit(json);
+                } else if (this.platform == 'android') {
+                    //N:18 T:19 O:20 R:21
+                    var optionJson = [
+                        {
+                            "intentKey": "CURRENT_SEND_MODE_KEY",
+                            "intentKeyValueClassName": "int",
+                            "intentKeyValue": 20
+
+                        },
+                        {
+                            "intentKey": "USERNAME_KEY",
+                            "intentKeyValueClassName": "String",
+                            "intentKeyValue": this.shuoshuoitem.userName
+                        },
+                        {
+                            "intentKey": "MSG_AND_REMSG_BEAN_KEY",
+                            "intentKeyValueClassName": "MsgAndReMsgBean",
+                            "intentKeyValue": "{\"feedID\":" + this.shuoshuoitem.topicID + ",\"refMsgUserID\":" + this.shuoshuoitem.refUserID + ",\"refMsgID\":" + this.shuoshuoitem.topicID + "}"
+                        }
+                    ]
+                    weexEventModule.startOtherNativeActivity2('com.taoguba.app.activity.SendEditActivity', optionJson);
+                } else {
+
+                }
+            },
+
+        },
+        ready(){
+
+        }
 
     }
 </script>
 
 <style>
-   .news-bottom{
-        margin-top:15px;
-        margin-bottom:15px;
-        flex-direction:row;
+    .item {
+        flex: 1;
+        width: 750;
+        padding: 10wx;
+        flex-direction: column;
     }
 
-    .news-content,.news-bottom{
-        margin-left:20px;
-        margin-right:20px;
+    .news-content {
+        flex-direction: row;
+        flex: 1;
     }
 
-    .news-reply,.news-txt,.news-share{
-        flex:1;
-        justify-content:center;
-        align-items:center;
-        flex-direction:row;
+    .news-shuoshuo {
+        flex: 1;
+        flex-direction: column;
+        margin: 10wx;
     }
 
-    .news-shuoshuo{
-            flex:1;
-            justify-content:flex-start;
-            align-items:flex-start;
-            flex-direction:row;
-        }
-
-  .news-content{
-        margin:20px;
-
-    }
-     .img{
-            width:40px;
-            height:40px;
-        }
-  .txt{
-        opacity:0.3;
-        font-size:30px;
+    .news-image {
+        justify-content: flex-start;
+        align-items: flex-start;
+        width: 35wx;
+        height: 35wx;
     }
 
-       .dayclass{
-               color:#666666;
-               font-size:40px;
-               font-weight:bold;
-             }
-          .nightclass{
-                 color:#ff0000;
-                 font-size:40px;
-                 font-weight:bold;
-            }
+    .logo {
+        width: 35wx;
+        height: 35wx;
+    }
+
+    .userName {
+        font-size: 15wx;
+        justify-content: flex-end;
+        align-items: flex-end;
+    }
+
+    .userName-0 {
+        color: #666666;
+    }
+
+    .userName-1 {
+        color: #999999;
+    }
+
+    .rightname {
+
+    }
+
+    .rightname-0 {
+        justify-content: flex-start;
+        align-items: flex-start;
+    }
+
+    .rightname-1 {
+        justify-content: flex-end;
+        align-items: flex-end;
+    }
+
+    .content {
+        font-size: 18wx;
+        color: #000000;
+        flex: 1;
+        max-width: 460;
+    }
+
+    .content-0-0 {
+        color: #666666;
+    }
+
+    .content-0-1 {
+        color: #999999;
+    }
+
+    .content-1-0 {
+        color: #666666;
+    }
+
+    .content-1-1 {
+        color: #000000;
+    }
+
+    .refContent {
+        font-size: 16wx;
+        color: #666666;
+        max-width: 460;
+        padding-top: 8wx;
+    }
+
+    .refContent-0-0 {
+        color: #666666;
+    }
+
+    .refContent-0-1 {
+        color: #999999;
+    }
+
+    .refContent-1-0 {
+        color: #666666;
+    }
+
+    .refContent-1-1 {
+        color: #000000;
+    }
+
+    .center_content_class {
+        border-radius: 8wx;
+        padding: 8wx;
+        /*  flex: 1;
+        */
+    }
+
+    .center_content_class-0-0 {
+        background-color: #DDDDDD;
+    }
+
+    .center_content_class-0-1 {
+        background-color: #0e1929;
+    }
+
+    .center_content_class-1-0 {
+        background-color: #a9d964;
+    }
+
+    .center_content_class-1-1 {
+        background-color: #a9d964;
+    }
+
+    .shuoshuo {
+        flex: 1;
+        padding-right: 18wx;
+        margin-top: 10wx;
+        border-radius: 8wx;
+    }
+
+    .shuoshuo_android {
+        flex-direction: row;
+    }
+
+    .shuoshuo-0-0 {
+        justify-content: flex-start;
+        align-items: flex-start;
+    }
+
+    .shuoshuo-0-1 {
+        justify-content: flex-start;
+        align-items: flex-start;
+    }
+
+    .shuoshuo-1-0 {
+        justify-content: flex-end;
+        align-items: flex-end;
+    }
+
+    .shuoshuo-1-1 {
+        justify-content: flex-end;
+        align-items: flex-end;
+    }
+
+    .time {
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+    }
+
+    .createdt {
+        font-size: 18wx;
+    }
+
+    .createdt-0 {
+        color: #666666;
+    }
+
+    .createdt-1 {
+        color: #999999;
+    }
+
+
 </style>

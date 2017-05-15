@@ -1,119 +1,268 @@
 <template>
     <div>
-    <navbar title="行业会议"></navbar>
-    <taoguba-wxc-panel title="最新评论"/>
-    <list>
-         <refresh class="refresh-view" display="{{refresh_display}}" onrefresh="onrefresh">
-             <loading-indicator class="indicator" ></loading-indicator>
-             <text class="refresh-arrow" style="text-align:center;color:rgb(238,162,54)" if="{{refresh_display==='hide'}}">
-                 {{msg}}
-             </text>
-         </refresh>
-
-        <cell repeat="{{stockitem in stockArray}}">
-           <meeting_pinglun_item stockitem="{{stockitem}}"></meeting_pinglun_item>
-        </cell>
+        <navbar title="行业会议" if="{{navBar_display}}" type="{{skinType}}" shownleft="true"></navbar>
+        <list>
+            <refresh class="refresh-view refresh-view-{{skinType}}" display="{{refresh_display}}" onrefresh="onrefresh">
+                <loading-indicator class="indicator"></loading-indicator>
+                <text class="refresh-arrow refresh-arrow-{{skinType}}">
+                    下拉刷新
+                </text>
+            </refresh>
+            <cell>
+                <taoguba-wxc-panel title="最新评论"/>
+            </cell>
+            <cell repeat="{{stockitem in stockArray}}">
+                <meeting_pinglun_item stockitem="{{stockitem}}"></meeting_pinglun_item>
+            </cell>
         </list>
     </div>
 </template>
 
 <script>
-     require('../template/taoguba-wxc-panel.we')
+    require('../template/taoguba-wxc-panel.we')
     require('../template/navbar.we')
     require('weex-components');
     require('./meeting_pinglun_item.we')
     var stream = require('@weex-module/stream');
     var modal = require('@weex-module/modal');
-     var taoguba = require('../taoguba');
+    var taoguba = require('../taoguba');
+    var weexEventModule = require('@weex-module/weexEventModule');
+    var weexModalUIModule = require('@weex-module/weexModalUIModule');
     module.exports = {
 
-     data:{
-            refresh_display:'hide',
-            stockArray:[],
-            test:'s-test',
-            msg:'下拉刷新',
-            screenHeight: 0,
-            myrichvaluejson:{
+        data: {
+            refresh_display: 'hide',
+            stockArray: [],
+            test: 's-test',
+            msg: '下拉刷新',
+            pageSize: 10,
+            type: 'R',
+            topicID: 2918689,
+            platform: '',
+            skinType: 0,
+            navBar_display: true
+        },
 
+        created: function () {
+            var self = this;
+            self.platform = self.$getConfig().env.platform;
+            if (self.platform == 'iOS') {
+                self.navBar_display = false;
             }
-         },
-created: function(){
-               var self = this;
-               self.refresh();
-                this.screenHeight = this.$getConfig().env.deviceHeight ;
+            var ctopicID;
+            var cpageSize;
+            var ctype;
+            if (self.platform == 'iOS' || self.platform == 'android') {
+                ctopicID = self.$getConfig().topicID;
+                cpageSize = self.$getConfig().pageSize;
+                ctype = self.$getConfig().type;
+            } else {
+                ctopicID = taoguba.getUrlParam('topicID');
+                cpageSize = taoguba.getUrlParam('pageSize');
+                ctype = taoguba.getUrlParam('type');
+            }
+            self.topicID = ctopicID;
+            self.pageSize = cpageSize;
+            self.type = ctype;
+
+            self.refresh();
 
         },
-        methods:{
-            onrefresh:function(e){
+        methods: {
+            onrefresh: function (e) {
                 var self = this;
                 self.msg = '下拉刷新';
                 self.refresh_display = 'show';
-                this.$call('timer','setTimeout',function(){
-                   self.refresh_display = 'hide';
-                },2000);
+                this.$call('timer', 'setTimeout', function () {
+                    self.refresh_display = 'hide';
+                }, 2000);
                 self.refresh();
             },
 
-              refresh:function(){
-                      var self = this;
-                     stream.fetch({ 
-                             method:'GET', 
-                             url:taoguba.apiGetForums()+"blockID=1&pageNo=1&flag=0", 
-                              body:{
-                              "url":taoguba.apiGetForums(),
-                                      "blockID":"1",
-                                      "pageNo":"1",
-                                      "flag":"0"
-                               },
-                               headers:{
-                                  'Content-Type':'application/x-www-form-urlencoded',
-                               }
-                              },
-                          function(ret){ 
-                                     if(!ret.ok){ 
- //                                    modal.toast({"message":"Network Error!",'duration':2}); 
-                                    }else{ 
-                                         var json = JSON.parse(ret.data); 
-                                         for(var i = 0; i < json.dto.length;i++){
-                                             self.stockArray.push(json.dto[i]);
+            refresh: function () {
+                var self = this;
+                var url = taoguba.apiGetComplainMessage();
+                var body = {};
 
-                                         }
-                              } },
-                              function(res){  }
-                                   );
+                if (self.platform == 'iOS' || self.platform == 'android') {
+                    body.url = url;
+                    body.topicID = self.topicID;
+                    body.pageSize = self.pageSize;
+                    body.type = self.type;
+                }
+                stream.fetch({
+                        method: 'GET',
+                        url: url + 'topicID=' + self.topicID + '&pageSize=' + self.pageSize + '&type=' + self.type,
+                        body: body,
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            token: taoguba.getToken(),
+                        }
+                    },
+                    function (ret) {
+                        self.refresh_display = 'hide';
+                        var result = JSON.stringify(ret);
+                        // console.log('meeting_pinglun.we==' + result);
+                        if (!ret.ok) {
+//                                    modal.toast({"message":"Network Error!",'duration':2}); 
+                        } else {
+                            self.stockArray.splice(0, self.stockArray.length);
 
-           }
+                            var json = ret.data;
+                            //是String类型才解析
+                            if (json && typeof(json) != 'object') {
+                                try {
+                                    json = eval('(' + ret.data + ')');
+                                } catch (e) {
+                                }
 
-          }
+                            }
+                            var resultStatus;
+                            if (typeof window === 'object' || self.platform == 'iOS') {
+                                if (json && json.status == true) {
+                                    resultStatus = '1';
+                                } else {
+                                    resultStatus = '0';
+                                }
+                            } else {
+                                resultStatus = weexEventModule.isStatus(json.errorCode, json.status);
+                            }
+                            //                                console.log('resultStatus=='+resultStatus);
+
+                            if (resultStatus == '1') {
+                                if (json.dto) {
+                                    if (json.dto && json.dto.length > 0) {
+
+                                        for (var i = 0; i < json.dto.length; i++) {
+                                            self.stockArray.push(json.dto[i]);
+
+                                        }
+                                    } else {
+                                        if (self.pageNo == 1) {
+                                            if (self.platform == 'iOS') {
+                                                //modal.toast({"message":"木有新的数据",'duration':2}); 
+                                            } else if (self.platform == 'android') {
+                                                weexModalUIModule.toast("木有新的数据");
+                                            }
+                                        } else {
+                                            if (self.platform == 'iOS') {
+                                                // modal.toast({"message":"木有更多数据",'duration':2}); 
+                                            } else if (self.platform == 'android') {
+                                                weexModalUIModule.toast("木有更多数据");
+                                            } else {
+                                                console.log("木有更多数据");
+                                            }
+                                        }
+                                    }
+
+
+                                }
+                            } else {
+                                if (typeof window === 'object') {
+                                    console.log(json.errorMessage);
+                                } else {
+                                    weexModalUIModule.toast(json.errorMessage);
+                                }
+
+                            }
+
+
+                        }
+                    },
+                    function (res) {
+                    }
+                );
+
+            }
+
+        }
 
     }
 </script>
 
 <style>
-    .refresh-view{
-        height:100;
-        width:750;
-        align-items:center;
+
+    .loading-view {
+        width: 750;
+        height: 50wx;
+        display: -ms-flex;
+        display: -webkit-flex;
+        display: flex;
+        -ms-flex-align: center;
+        -webkit-align-items: center;
+        -webkit-box-align: center;
+        align-items: center;
+        justify-content: center;
     }
 
-    .indicator{
-        width:60;
-        height:60;
-        color:#889967;
+    .loading-view-1 {
+        background-color: #15253d;
     }
-   .news-bottom{
-        margin-top:15;
-        margin-bottom:15;
-        flex-direction:row;
+
+    .loading-view-0 {
+        background-color: #f5f5f5;
     }
-  .news-reply,.news-txt,.news-share{
-         flex:1;
-         justify-content:center;
-         align-items:center;
-         flex-direction:row;
-     }
- .txt{
-         opacity:0.3;
-         font-size:30;
-     }
+
+    .refresh-arrow {
+        margin-top: 20wx;
+        height: 20wx;
+        width: 100;
+        font-size: 12wx;
+        text-align: center;
+        align-items: center;
+    }
+
+    .refresh-arrow-0 {
+        color: #BBBBBB;
+    }
+
+    .refresh-arrow-1 {
+        color: #666666;
+    }
+
+    .refresh-view {
+        width: 750;
+        height: 100;
+        display: -ms-flex;
+        display: -webkit-flex;
+        display: flex;
+        -ms-flex-align: center;
+        -webkit-align-items: center;
+        -webkit-box-align: center;
+        align-items: center;
+        justify-content: center;
+
+    }
+
+    .refresh-view-0 {
+        background-color: #f5f5f5;
+    }
+
+    .refresh-view-1 {
+        background-color: #15253d;
+    }
+
+    .indicator {
+        height: 30wx;
+        width: 60;
+        color: #889967;
+    }
+
+    .news-bottom {
+        margin-top: 15;
+        margin-bottom: 15;
+        flex-direction: row;
+    }
+
+    .news-reply, .news-txt, .news-share {
+        flex: 1;
+        justify-content: center;
+        align-items: center;
+        flex-direction: row;
+    }
+
+    .txt {
+        opacity: 0.3;
+        font-size: 30;
+    }
 </style>

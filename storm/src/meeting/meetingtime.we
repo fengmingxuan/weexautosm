@@ -1,18 +1,22 @@
 <template>
-    <div >
-    <list style="height: {{ctHeight}}">
-         <refresh class="refresh-view" display="{{refresh_display}}" onrefresh="onrefresh">
-             <loading-indicator class="indicator" ></loading-indicator>
-             <text class="refresh-arrow" style="text-align:center;color:rgb(238,162,54)" if="{{refresh_display==='hide'}}">
-                 {{msg}}
-             </text>
-         </refresh>
-        <cell repeat="{{meetingitem in meetingArray}}">
-
+    <div>
+        <list class="list">
+            <refresh class="refresh-view refresh-view-{{skinType}}" display="{{refresh_display}}" onrefresh="onrefresh"
+                     refreshing="{{refreshing}}">
+                <loading-indicator class="indicator"></loading-indicator>
+                <text class="refresh-arrow refresh-arrow-{{skinType}}">
+                    下拉刷新
+                </text>
+            </refresh>
+            <cell repeat="{{meetingitem in meetingArray}}" id="{{meetingitem.idseq}}">
                 <meeting_item meetingitem="{{meetingitem}}"></meeting_item>
-
-
-        </cell>
+            </cell>
+            <!--<loading  class="loading-view loading-view-{{skinType}}" display="{{showLoading}}"  onloading="onloading">-->
+            <!--<text class="refresh-arrow refresh-arrow-{{skinType}}"   >-->
+            <!--加载更多-->
+            <!--</text>-->
+            <!--<loading-indicator class="indicator" ></loading-indicator>-->
+            <!--</loading>-->
         </list>
     </div>
 </template>
@@ -24,76 +28,269 @@
     var stream = require('@weex-module/stream');
     var modal = require('@weex-module/modal');
     var taoguba = require('../taoguba');
+    var date = require('../common/date');
+    var weexEventModule = require('@weex-module/weexEventModule');
+    var weexModalUIModule = require('@weex-module/weexModalUIModule');
+    var dom = require('@weex-module/dom');
+
     module.exports = {
+        data: {
+            refreshing: 'false',
+            refresh_display: 'hide',
+            meetingArray: [],
+            test: 's-test',
+            msg: '下拉刷新',
+            ctHeight: 800,
+            isFirst: 1,
+            skinType: 0,
+            showLoading: 'hide',
+            type: 'D',//type D当月 S上个月 X下个月
+            dateTime: date.formatDate(new Date(), "yyyyMM"),
+            pageNo: 1,
+            platform: '',
+            offset: 0,//定位当前日期的位置
+        },
 
-     data:{
-            refresh_display:'hide',
-            meetingArray:[],
-            test:'s-test',
-            msg:'下拉刷新',
-             ctHeight: 800,
-         },
-
-        methods:{
-            onrefresh:function(e){
+        methods: {
+            autoRefresh: function () {
+                var self = this;
+                this.$call('timer', 'setTimeout', function () {
+                    self.refreshing = 'true';
+                }, 50);
+            },
+            scrollToNow: function (e) {
+                var self = this;
+                console.log('scrollToNow');
+                if (self.meetingArray.length > 0) {
+                    var id = self.meetingArray[self.offset].idseq;
+                    var offset = self.offset;
+                    const el = this.$el(id);
+                    dom.scrollToElement(el, {offset: offset})
+                }
+            },
+            onloading: function (e) {
+                console.log('onloading');
+                var self = this;
+                self.showLoading = 'show';
+                self.pageNo = self.pageNo + 1;
+                self.refresh();
+            },
+            onrefresh: function (e) {
                 var self = this;
                 self.msg = '下拉刷新';
                 self.refresh_display = 'show';
-                this.$call('timer','setTimeout',function(){
-                   self.refresh_display = 'hide';
-                },2000);
                 self.refresh();
             },
 
-            refresh:function(){
-                     var self = this;
-                    stream.fetch({ 
-                            method:'GET', 
-                            url:taoguba.apiGetForums()+"blockID=1&pageNo=1&flag=0", 
-                             body:{
-                              "url":taoguba.apiGetForums(),
-                                     "blockID":"1",
-                                     "pageNo":"1",
-                                     "flag":"0"
-                              },
-                              headers:{
-                                 'Content-Type':'application/x-www-form-urlencoded',
-                              }
-                             },
-                         function(ret){ 
-                                    if(!ret.ok){ 
-//                                    modal.toast({"message":"Network Error!",'duration':2}); 
-                                   }else{ 
-                                        var json = JSON.parse(ret.data); 
-                                        for(var i = 0; i < json.dto.length;i++){
-                                            self.meetingArray.push(json.dto[i]);
-                                        }
-                             } },
-                             function(res){  }
-                                  );
+            refresh: function () {
+                this.isFirst = 0;
+                var self = this;
+                var url = taoguba.apiGetTzrlData();
+                var body = {};
 
-          }
-          },
-         created: function(){
-             var self = this;
-             self.refresh();
+                if (self.platform == 'iOS' || self.platform == 'android') {
+                    body.url = url;
+                    body.type = self.type;
+                    body.dateTime = self.dateTime;
+                }
+
+                stream.fetch({
+                        method: 'GET',
+                        url: url + 'type=' + self.type + '&dateTime=' + self.dateTime,
+                        body: body,
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            token: taoguba.getToken(),
+                        }
+                    },
+                    function (ret) {
+                        self.refresh_display = 'hide';
+                        self.showLoading = 'hide';
+                        self.refreshing = "false";
+                        var result = JSON.stringify(ret);
+                        // console.log('meetingtime.we-->' + result);
+                        if (!ret.ok) {
+//                                    modal.toast({"message":"Network Error!",'duration':2}); 
+                        } else {
+                            if (self.pageNo == 1) {
+                                self.meetingArray.splice(0, self.meetingArray.length);
+                            }
+                            var json = ret.data;
+                            //是String类型才解析
+                            if (json && typeof(json) != 'object') {
+                                try {
+                                    json = eval('(' + ret.data + ')');
+                                } catch (e) {
+                                }
+
+                            }
+                            var resultStatus;
+                            if (typeof window === 'object' || self.platform == 'iOS') {
+                                if (json && json.status == true) {
+                                    resultStatus = '1';
+                                } else {
+                                    resultStatus = '0';
+                                }
+                            } else {
+                                resultStatus = weexEventModule.isStatus(json.errorCode, json.status);
+                            }
+                            //                                console.log('resultStatus=='+resultStatus);
+                            if (resultStatus == '1') {
+                                if (json.dto) {
+                                    if (json.dto.listCalendar && json.dto.listCalendar.length > 0) {
+
+                                        for (var i = 0; i < json.dto.listCalendar.length; i++) {
+                                            var meetingitem = json.dto.listCalendar[i];
+                                            meetingitem.idseq = 'id' + meetingitem.seq;
+                                            //判断当前月份，最近3天的日期
+                                            var currentDate = date.formatDate(new Date(), "yyyyMMdd");
+                                            if (Math.abs(currentDate - meetingitem.dateNum) == 0) {
+                                                if(self.offset==0){
+                                                    self.offset = i;
+                                                }
+                                                console.log('datenum==' + meetingitem.dateNum);
+                                            }
+                                            self.meetingArray.push(meetingitem);
+                                        }
+                                        if (self.type == 'D') {
+                                            self.$call('timer', 'setTimeout', function () {
+                                                self.scrollToNow();
+                                            }, 3000);
+                                        }
+                                    } else {
+                                        if (self.pageNo == 1) {
+                                            if (self.platform == 'iOS') {
+                                                //modal.toast({"message":"木有新的数据",'duration':2}); 
+                                            } else if (self.platform == 'android') {
+                                                weexModalUIModule.toast("木有新的数据");
+                                            }
+                                        } else {
+                                            if (self.platform == 'iOS') {
+                                                // modal.toast({"message":"木有更多数据",'duration':2}); 
+                                            } else if (self.platform == 'android') {
+                                                weexModalUIModule.toast("木有更多数据");
+                                            } else {
+                                                console.log("木有更多数据");
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                if (typeof window == 'object') {
+                                    console.log(json.errorMessage)
+                                } else {
+                                    weexModalUIModule.toast(json.errorMessage);
+                                }
+
+                            }
+
+                        }
+                    },
+                    function (res) {
+                    }
+                );
+
+            }
+        },
+        created: function () {
+
+            this.ctHeight = this.$getConfig().env.deviceHeight - 320;
+            this.platform = this.$getConfig().env.platform;
+            var cskinType = this.$getConfig().skinType;
+            ;
+            if (this.platform != 'iOS' && this.platform != 'android') {
+                cskinType = taoguba.getUrlParam('skinType');
+            }
+            if (cskinType == undefined) {
+                cskinType = 0;
+            }
+            this.skinType = cskinType;
+//           this.refresh();
         },
         ready: function () {
-              this.ctHeight = this.$getConfig().env.deviceHeight;
-            }
+            //weexEventModule.ShowLogI("tag","type:"+this.type);
+
+
+        }
     }
 </script>
 
 <style>
-    .refresh-view{
-        height:100;
-        width:750;
-        align-items:center;
+    .list {
+        width: 750;
     }
 
-    .indicator{
-        width:60;
-        height:60;
-        color:#889967;
+    .content_class-0 {
+        background-color: #f5f5f5;
+    }
+
+    .content_class-1 {
+        background-color: #15253d;
+    }
+
+    .loading-view {
+        width: 750;
+        height: 50wx;
+        display: -ms-flex;
+        display: -webkit-flex;
+        display: flex;
+        -ms-flex-align: center;
+        -webkit-align-items: center;
+        -webkit-box-align: center;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .loading-view-1 {
+        background-color: #15253d;
+    }
+
+    .loading-view-0 {
+        background-color: #f5f5f5;
+    }
+
+    .refresh-arrow {
+        margin-top: 20wx;
+        height: 20wx;
+        width: 100wx;
+        font-size: 12wx;
+        text-align: center;
+        align-items: center;
+    }
+
+    .refresh-arrow-0 {
+        color: #BBBBBB;
+    }
+
+    .refresh-arrow-1 {
+        color: #666666;
+    }
+
+    .refresh-view {
+        width: 750;
+        height: 80wx;
+        display: -ms-flex;
+        display: -webkit-flex;
+        display: flex;
+        -ms-flex-align: center;
+        -webkit-align-items: center;
+        -webkit-box-align: center;
+        align-items: center;
+        justify-content: center;
+
+    }
+
+    .refresh-view-0 {
+        background-color: #f5f5f5;
+    }
+
+    .refresh-view-1 {
+        background-color: #15253d;
+    }
+
+    .indicator {
+        height: 30wx;
+        width: 30wx;
+        color: #889967;
     }
 </style>

@@ -1,132 +1,153 @@
 <template>
-
-    <div style="flex: 1;flex-direction: row">
-        <div>
-        <image class="logo" src="http://i1.piimg.com/567571/c046122d57e5da9e.png"></image>
+    <div class="item itemClass-{{skinType}}">
+        <div class="top_div">
+            <image class="user_avatar" src="{{stockitem.img}}"
+                   placeHolder="https://image.taoguba.com.cn/img/user_icon_60.png"></image>
+            <text class="user_name user_name-{{skinType}}">{{stockitem.userName}}</text>
+            <text class="post_time post_time-{{skinType}}">{{formatTime()}}</text>
         </div>
-        <div style="flex: 1;">
-
-            <div class="news-bottom" >
-             <div class="news-txt">
-                <text class="news-title">{{stockitem.userName}}</text>
-             </div>
-            <div class="news-txt">
-               <text class="txt">{{stockitem.lastReplyDate}}</text>
-             </div>
-
-
-            </div>
-            <div class="news-content" >
-              <text class="news-title">{{stockitem.subject}}</text>
-             </div>
-             <div class="line"></div>
+        <div class="content_div">
+            <text class="news_content news_content-{{skinType}}">{{stockitem.content}}</text>
         </div>
+
+        <div class="line lineClass-{{skinType}}"></div>
     </div>
 </template>
 
 <script>
     require('weex-components');
     var date = require('../common/date');
+    var taoguba = require('../taoguba');
+    var weexEventModule = require('@weex-module/weexEventModule');
     module.exports = {
-        created:function(){
-          console.log('news');
+        created: function () {
+//            this.stockitem.img = taoguba.getLogoImageUrl(this.stockitem.img);
+            this.platform = this.$getConfig().env.platform;
+
+            var cskinType = this.$getConfig().skinType;
+            if (cskinType == undefined) {
+                cskinType = taoguba.getUrlParam('skinType');
+            }
+            this.skinType = cskinType;
         },
-        data:{
-        stockitem:{
-          'userID':'2',
-          'userName':'股天乐',
-          'topicID':'1647303',
-          'totalReplyNum':'139',
-          'subject':'淘县首届实战高峰论坛，专属投资者的大盛会，报名走起！',
-          'postDate':'1490284800000',
-          'lastReplyDate':'1490284800000',
-          'thumbnail':'/img/forumthumbnail.png',
-          'usefulNum':'36',
-          height:100,
+        data: {
+            platform: 'web',
+            stockitem: {
+                "seq": null,
+                "feedID": 2921143,
+                "type": "R",
+                "topicID": 2918689,
+                "createdt": 1492591575000,
+                "content": "“紫丁香一号”计划在对接3个月后，通过空间站机械臂释放入轨。",
+                "userName": "开心一刻015",
+                "userID": 1269710,
+                "img": 'https://image.taoguba.com.cn/img/user_icon_60.png',
+                "upNum": 0
+            },
+
 
         },
-
-
-
-        },
-        methods:{
-                formatTime :function(){
-                var time ;
-                time = this.stockitem.lastReplyDate;
+        methods: {
+            formatTime: function () {
+                var time;
+                time = this.stockitem.createdt;
                 var strTime;
-                if (this.platform == 'iOS') {
-                  var event_ios = require('@weex-module/event');
-                  strTime =  event_ios.dateStringFromNumber(time.toString());
-                 }
-                 else if (typeof window === 'object') {
-                    strTime =  date.formatDate(new Date(time),"yy-MM-dd");
-                 }else{
-                   // strTime = weexEventModule.TimeFormate("3", time,"");
-                     strTime =  date.formatDate(new Date(time),"yy-MM-dd");
-                 }
-
-//                weexEventModule.ShowLogI("","strTime-->:"+strTime);
+//                if (this.platform == 'android') {
+//                  strTime = weexEventModule.TimeFormate("1", time,"yyyy-MM-dd hh:mm");
+//                } else {
+                strTime = date.formatDate(new Date(time), "yyyy-MM-dd hh:mm");
+//                }
                 return strTime;
-             }
+            }
         }
     }
 </script>
 
 <style>
-   .news-bottom{
-        margin-top:15;
-        margin-bottom:15;
-        flex-direction:row;
+    .top_div {
+        flex-direction: row;
+        align-items: center;
+        margin-top: 10wx;
+        margin-right: 10wx;
     }
 
-    .news-content{
-        margin-left:20;
-        margin-right:20;
+    .user_avatar {
+        width: 35wx;
+        height: 35wx;
+        margin-left: 10wx;
+    }
 
-    }
- .news-bottom{
-        margin-left:20;
-        margin-right:20;
-    }
-    .news-txt{
-        flex:2;
-        justify-content:center;
-        align-items:center;
-        flex-direction:row;
-    }
-    .news-reply,.news-share{
-            flex:1;
-            justify-content:center;
-            align-items:center;
-            flex-direction:row;
-        }
-
-    .news-title{
+    .user_name {
+        margin-left: 10wx;
         font-weight: bold;
         font-size: 20wx;
-        color: #000000;
+        flex: 1;
     }
 
-     .line{
-       height: 2;
-       background-color: #666666;
-       margin-left: 10;
-       margin-right: 10;
-       margin-top: 10;
-       margin-bottom: 10;
-
-     }
-
-     .img{
-            width:40;
-            height:40;
-        }
-     .logo{
-      width:80;
-     height:80;
-     }
-  .txt{
-        opacity:0.3;
-        font-size:30;
+    .user_name-0 {
+        color: #333333;
     }
+
+    .user_name-1 {
+        color: #999999;
+    }
+
+    .post_time {
+        font-size: 13wx;
+        flex: 1;
+        text-align: right;
+    }
+
+    .post_time-0 {
+        color: #BBBBBB;
+    }
+
+    .post_time-1 {
+        color: #666666;
+    }
+
+    .content_div {
+        margin-top: 10wx;
+        margin-right: 10wx;
+        margin-left: 56wx;
+    }
+
+    .item {
+        flex: 1;
+        flex-direction: column;
+    }
+
+    .itemClass-0:active {
+        background-color: #dddddd;
+    }
+
+    .itemClass-1:active {
+        background-color: #132237;
+    }
+
+    .news_content {
+        font-size: 18wx;
+    }
+
+    .news_content-0 {
+        color: #555555;
+    }
+
+    .news_content-1 {
+        color: #999999;
+    }
+
+    .line {
+        height: 1wx;
+        margin-top: 10wx;
+    }
+
+    .lineClass-0 {
+        background-color: #DDDDDD;
+    }
+
+    .lineClass-1 {
+        background-color: #0e1929;
+    }
+
 </style>

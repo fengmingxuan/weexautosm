@@ -1,0 +1,97 @@
+<template>
+    <div>
+        <list class="scroller">
+            <cell repeat="{{item in  items}}">
+                <div class="item" id="{{item.i}}">
+                    <text class="item-title">row {{item.id}} {{item.i}}</text>
+                </div>
+            </cell>
+        </list>
+        <div class="group">
+            <text onclick="goto10" class="button">Go to 10</text>
+            <text onclick="goto20" class="button">Go to 20</text>
+        </div>
+    </div>
+</template>
+
+<style>
+
+
+    .item {
+        justify-content: center;
+        border-bottom-width: 2px;
+        border-bottom-color: #c0c0c0;
+        height: 100px;
+        padding: 20px;
+    }
+
+    .item-title {
+    }
+
+    .scroller {
+        width: 700px;
+        height: 700px;
+        border-width: 3px;
+        border-style: solid;
+        border-color: rgb(162, 217, 192);
+        margin-left: 25px;
+    }
+
+    .group {
+        flex-direction: row;
+        justify-content: center;
+        margin-top: 60px;
+    }
+
+    .button {
+        width: 200px;
+        padding-top: 20px;
+        padding-bottom: 20px;
+        font-size: 40px;
+        margin-left: 30px;
+        margin-right: 30px;
+        text-align: center;
+        color: #41B883;
+        border-width: 2px;
+        border-style: solid;
+        border-color: rgb(162, 217, 192);
+        background-color: rgba(162, 217, 192, 0.2);
+    }
+</style>
+
+<script>
+    var dom = require('@weex-module/dom')
+    require('weex-components');
+    module.exports = {
+        methods: {
+            goto10: function (e) {
+                console.log('goto10');
+                //const el = this.$refs.i10[0];
+                const el = this.$el('i10');
+                dom.scrollToElement(el, {offset: 10})
+
+            },
+            goto20: function (e) {
+                //const el = this.$refs.i20[0];
+                const el = this.$el('i29');
+                dom.scrollToElement(el, {offset: 29})
+            }
+        },
+        data: {
+            items: []
+        },
+        created () {
+            for (var i = 0; i < 30; i++) {
+                var id = i;
+                var item = {
+                    id: id,
+                    i: 'i' + id,
+                };
+
+                this.items.push(item);
+            }
+
+        },
+
+    }
+</script>

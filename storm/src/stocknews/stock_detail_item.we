@@ -1,138 +1,297 @@
 <template>
-
-    <div style="flex: 1;flex-direction: row">
-        <div>
-        <image class="logo" src="http://i1.piimg.com/567571/c046122d57e5da9e.png"></image>
-        </div>
-        <div style="flex: 1;">
-            <div class="news-content" >
-              <text class="news-title">{{stockitem.subject}}</text>
-             </div>
-            <div class="news-bottom" >
-                <div class="news-txt">
-                   <text class="txt">{{stockitem.lastReplyDate}}</text>
-                 </div>
-
-                 <div class="news-share"   >
-                     <image class="img" src="http://ww1.sinaimg.cn/large/0060lm7Tgw1fbbe3xef2oj303h02owec.jpg"></image>
-                      <text class="txt">{{stockitem.usefulNum}}</text>
-                 </div>
-                <div class="news-reply"  >
-                    <image class="img" src="http://i1.piimg.com/567571/c046122d57e5da9e.png"></image>
-                     <text class="txt">{{stockitem.totalReplyNum}}</text>
+    <div>
+        <div class="itemClass">
+            <image class="img_left" src="{{stockitem.img}}"
+                   placeHolder="https://image.taoguba.com.cn/img/user_icon_60.png"></image>
+            <div style="flex: 1">
+                <div class="itemClass_right">
+                    <div>
+                        <text class="txtTitleClass txtTitleClass-{{skinType}}">{{stockitem.userName}}</text>
+                        <text class="textClass textClass-{{skinType}}">{{formatTime(stockitem.createdt)}}</text>
+                    </div>
+                    <div class="last_right">
+                        <div class="div_pinlun div_pinlun-{{skinType}}" onclick="pinlun">
+                            <image class="img" src="{{getImgUrl('././images/pinglun.png')}}"></image>
+                        </div>
+                        <div class="div_zan div_zan-{{skinType}}" onclick="dianzan">
+                            <image class="img" src="{{getImgUrl('././images/xiaodianzan.png')}}"></image>
+                            <text class="numClass textClass-{{skinType}}">{{stockitem.upNum}}</text>
+                        </div>
+                    </div>
                 </div>
+                <text class="txtTitleClass txtTitleClass-{{skinType}}">{{stockitem.content}}</text>
             </div>
-            <div class="news-content" >
-              <text class="news-title">{{stockitem.subject}}</text>
-             </div>
-             <div class="line"></div>
         </div>
+        <div class="lineClass lineClass-{{skinType}}"></div>
     </div>
 </template>
 
 <script>
     require('weex-components');
+    var taoguba = require('../taoguba');
     var date = require('../common/date');
+    var weexEventModule = require('@weex-module/weexEventModule');
+    var event = require('@weex-module/event');
+    var weexModalUIModule = require('@weex-module/weexModalUIModule');
+    var stream = require('@weex-module/stream');
     module.exports = {
-        created:function(){
-          console.log('news');
+        created: function () {
+            this.platform = this.$getConfig().env.platform;
+            var cskinType = this.$getConfig().skinType;
+            if (cskinType == undefined) {
+                cskinType = taoguba.getUrlParam('skinType');
+            }
+            this.skinType = cskinType;
         },
-        data:{
-        stockitem:{
-          'userID':'2',
-          'userName':'股天乐',
-          'topicID':'1647303',
-          'totalReplyNum':'139',
-          'subject':'淘县首届实战高峰论坛，专属投资者的大盛会，报名走起！',
-          'postDate':'1490284800000',
-          'lastReplyDate':'1490284800000',
-          'thumbnail':'/img/forumthumbnail.png',
-          'usefulNum':'36',
-          height:100,
-           myrichvalue:[]
-        },
+        data: {
+            skinType: 0,
+            stockitem: {
+                "seq": null,
+                "feedID": 2920513,
+                "type": "R",
+                "title": "",
+                "topicID": 2920324,
+                "createdt": 1492571802000,
+                "content": "@帅八戒 6666",
+                "userName": "开心一刻015",
+                "userID": 1269710,
+                "img": '',
+                'upNum': 0
+            },
 
 
-
         },
-        methods:{
-                formatTime :function(){
-                var time ;
-                time = this.stockitem.lastReplyDate;
+        methods: {
+            formatTime: function (time) {
+
                 var strTime;
-                if (this.platform == 'iOS') {
-                  var event_ios = require('@weex-module/event');
-                  strTime =  event_ios.dateStringFromNumber(time.toString());
-                 }
-                 else if (typeof window === 'object') {
-                    strTime =  date.formatDate(new Date(time),"yy-MM-dd");
-                 }else{
-                   // strTime = weexEventModule.TimeFormate("3", time,"");
-                     strTime =  date.formatDate(new Date(time),"yy-MM-dd");
-                 }
+//                if (this.platform == 'iOS') {
+//                  var event_ios = require('@weex-module/event');
+//                  strTime =  event_ios.dateStringFromNumber(time.toString());
+//                 }
+//                 else if (typeof window === 'object') {
+                strTime = date.formatDate(new Date(time), "yyyy-MM-dd hh:mm");
+//                 }else{
+//                    strTime = weexEventModule.TimeFormate("1", time,"yyyy-MM-dd HH:mm");
+//                     //strTime =  date.formatDate(new Date(time),"yyyy-MM-dd HH:mm");
+//                 }
 
 //                weexEventModule.ShowLogI("","strTime-->:"+strTime);
                 return strTime;
-             }
+            },
+            getImgUrl: function (url) {
+                return taoguba.getImageUrl(url);
+            },
+            pinlun: function () {
+                if (this.platform == 'iOS') {
+                    var json = {
+                        feedID: this.stockitem.topicID,
+                        refMsgUserID: this.stockitem.userID,
+                        refMsgID: this.stockitem.topicID,
+                        type: 'R',
+                        topicID: this.stockitem.topicID,
+                        preText: "@" + this.stockitem.userName,
+                    }
+                    event.enterToEdit(json);
+
+                } else if (this.platform == 'android') {
+                    //N:18 T:19 O:20 R:21
+                    var optionJson = [
+                        {
+                            "intentKey": "CURRENT_SEND_MODE_KEY",
+                            "intentKeyValueClassName": "int",
+                            "intentKeyValue": 21
+                        },
+                        {
+                            "intentKey": "USERNAME_KEY",
+                            "intentKeyValueClassName": "String",
+                            "intentKeyValue": this.stockitem.userName
+                        },
+                        {
+                            "intentKey": "MSG_AND_REMSG_BEAN_KEY",
+                            "intentKeyValueClassName": "MsgAndReMsgBean",
+                            "intentKeyValue": "{\"feedID\":" + this.stockitem.topicID + ",\"refMsgUserID\":" + this.stockitem.userID + ",\"refMsgID\":" + this.stockitem.topicID + "}"
+                        }
+                    ]
+                    weexEventModule.startOtherNativeActivity2('com.taoguba.app.activity.SendEditActivity', optionJson);
+                }
+            },
+            dianzan: function () {
+                var self = this;
+                var url = taoguba.getApiUsefulShuo();
+                var body = {}
+                if (this.platform == 'iOS' || this.platform == 'android') {
+                    body.url = url;
+                    body.flag = "W";
+                    body.feedID = self.stockitem.feedID;
+                } else {
+                    body.flag = "W";
+                    body.feedID = self.stockitem.feedID;
+                }
+                stream.fetch({
+                    method: 'POST',
+                    url: url,
+                    body: body,
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        token: taoguba.getToken(),
+                    }
+                }, function (ret) {
+                    var result = JSON.stringify(ret);
+                    console.log('result  ==' + result);
+                    if (!ret.ok) {
+
+                    } else {
+                        var json = ret.data;
+                        //是String类型才解析
+                        if (json && typeof(json) != 'object') {
+                            try {
+                                json = eval('(' + ret.data + ')');
+                            } catch (e) {
+                            }
+
+                        }
+                        var resultStatus;
+                        if (typeof window === 'object' || self.platform == 'iOS') {
+                            if (json && json.status == true) {
+                                resultStatus = '1';
+                            } else {
+                                resultStatus = '0';
+                            }
+                        } else {
+                            resultStatus = weexEventModule.isStatus(json.errorCode, json.status);
+                        }
+                        if (resultStatus == '1') {
+                            self.stockitem.upNum = self.stockitem.upNum + 1;
+                        } else {
+                            weexModalUIModule.toast(json.errorMessage);
+                        }
+                    }
+                });
+            }
+
         }
     }
 </script>
 
 <style>
-   .news-bottom{
-        margin-top:15;
-        margin-bottom:15;
-        flex-direction:row;
+    .itemClass {
+        flex: 1;
+        flex-direction: row;
+        padding: 10wx;
     }
 
-    .news-content{
-        margin-left:20;
-        margin-right:20;
-
-    }
- .news-bottom{
-        margin-left:20;
-        margin-right:20;
-    }
-    .news-txt{
-        flex:2;
-        justify-content:center;
-        align-items:center;
-        flex-direction:row;
-    }
-    .news-reply,.news-share{
-            flex:1;
-            justify-content:center;
-            align-items:center;
-            flex-direction:row;
-        }
-
-    .news-title{
-        font-weight: bold;
-        font-size: 20wx;
-        color: #000000;
+    .itemClass_right {
+        flex: 1;
+        flex-direction: row;
     }
 
-     .line{
-       height: 2;
-       background-color: #666666;
-       margin-left: 10;
-       margin-right: 10;
-       margin-top: 10;
-       margin-bottom: 10;
+    .txtTitleClass {
+        margin-left: 5wx;
+        font-size: 16wx;
+        height: 20wx;
+        flex: 1;
+    }
 
-     }
+    .txtTitleClass-0 {
+        color: #666666;
+    }
 
-     .img{
-            width:40;
-            height:40;
-        }
-     .logo{
-      width:80;
-     height:80;
-     }
-  .txt{
-        opacity:0.3;
-        font-size:30;
+    .txtTitleClass-1 {
+        color: #999999;
+    }
+
+    .lineClass {
+        height: 2px;
+        margin-top: 5wx;
+    }
+
+    .lineClass-0 {
+        background-color: #eeeeee;
+    }
+
+    .lineClass-1 {
+        background-color: #0e1929;
+    }
+
+    .news-bottom {
+        margin-top: 5wx;
+        margin-bottom: 15wx;
+        flex-direction: row;
+    }
+
+    .news-bottom {
+        margin-left: 5wx;
+        margin-right: 0wx;
+    }
+
+    .last_right {
+        flex: 1;
+        flex-direction: row;
+        justify-content: flex-end;
+    }
+
+    .img_left {
+        width: 35wx;
+        height: 35wx;
+    }
+
+    .textClass {
+        margin-top: 5wx;
+        margin-left: 5wx;
+        font-size: 13wx;
+    }
+
+    .numClass {
+        font-size: 13wx;
+        margin-left: 5wx;
+        margin-top: 3wx;
+    }
+
+    .textClass-0 {
+        color: #BBBBBB;
+    }
+
+    .textClass-1 {
+        color: #666666;
+    }
+
+    .img {
+        width: 18wx;
+        height: 18wx;
+    }
+
+    .div_pinlun {
+        width: 45wx;
+        height: 45wx;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        padding-right: 20wx;
+        padding-left: 20wx;
+    }
+
+    .div_zan {
+        height: 45wx;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        padding-right: 20wx;
+    }
+
+    .div_pinlun-0:active {
+        background-color: #dddddd
+    }
+
+    .div_pinlun-1:active {
+        background-color: #132237
+    }
+
+    .div_zan-0:active {
+        background-color: #dddddd
+    }
+
+    .div_zan-1:active {
+        background-color: #132237
     }
 </style>

@@ -1,16 +1,17 @@
 <template>
     <div class="wrapper">
-        <div class="toolbar" append = "tree">
+        <div class="toolbar" append="tree">
             <wxc-button type="primary" size="small" value="back" onclick="goback"
-                    style="margin-left:30px;width:150px; margin-top:5px; margin-bottom:5px"></wxc-button>
+                        style="margin-left:30px;width:150px; margin-top:5px; margin-bottom:5px"></wxc-button>
             <wxc-button type="primary" size="small" value="forward" onclick="goforward"
-                    style="margin-left:30px;width:150px; margin-top:5px; margin-bottom:5px"></wxc-button>
+                        style="margin-left:30px;width:150px; margin-top:5px; margin-bottom:5px"></wxc-button>
             <wxc-button type="primary" size="small" value="refresh" onclick="refresh"
-                    style="margin-left:30px;width:150px; margin-top:5px; margin-bottom:5px"></wxc-button>
-             <wxc-button type="primary" size="small" value="callnativeh5" onclick="callnativeh5"
-                                style="margin-left:30px;width:150px; margin-top:5px; margin-bottom:5px"></wxc-button>
+                        style="margin-left:30px;width:150px; margin-top:5px; margin-bottom:5px"></wxc-button>
+            <wxc-button type="primary" size="small" value="callnativeh5" onclick="callnativeh5"
+                        style="margin-left:30px;width:150px; margin-top:5px; margin-bottom:5px"></wxc-button>
         </div>
-        <web class="content" id="webview" src='http://192.168.1.15:8080/html/news.html' onpagestart="startload" onpagefinish="finishload" onerror="failload"></web>
+        <web class="content" id="webview" src='http://192.168.1.15:8080/html/news.html' onpagestart="startload"
+             onpagefinish="finishload" onerror="failload"></web>
     </div>
 </template>
 
@@ -23,6 +24,7 @@
         right: 0;
         bottom: 0;
     }
+
     .content {
         position: absolute;
         top: 0;
@@ -32,6 +34,7 @@
         margin-top: 0;
         margin-bottom: 70;
     }
+
     .toolbar {
         flex-direction: row;
         position: fixed;
@@ -47,38 +50,38 @@
 
     module.exports = {
         methods: {
-            goback: function() {
+            goback: function () {
                 var $webview = require('@weex-module/mywebview');
                 var webElement = this.$el('webview');
                 $webview.goBack(webElement.ref);
-                 console.log('goBack');
-             },
+                console.log('goBack');
+            },
 
-            goforward: function() {
+            goforward: function () {
                 var $webview = require('@weex-module/mywebview');
                 var webElement = this.$el('webview');
                 $webview.goForward(webElement.ref);
                 console.log('goForward');
             },
-            refresh: function() {
+            refresh: function () {
                 var $webview = require('@weex-module/mywebview');
                 var webElement = this.$el('webview');
                 $webview.reload(webElement.ref);
                 console.log('reload');
             },
-            callnativeh5: function() {
+            callnativeh5: function () {
                 var $webview = require('@weex-module/mywebview');
                 var webElement = this.$el('webview');
-                $webview.callnativeh5(webElement.ref,'weex to html5');
+                $webview.callnativeh5(webElement.ref, 'weex to html5');
                 console.log('callnativeh5');
             },
-            startload: function(e) {
+            startload: function (e) {
 
             },
-            finishload: function(e) {
+            finishload: function (e) {
 
             },
-            failload: function(e) {
+            failload: function (e) {
 
             }
         }

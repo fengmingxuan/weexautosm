@@ -1,7 +1,7 @@
 <template>
-    <div class="item item-{{skinType}} itemClass-{{skinType}}" onclick="todetail">
+    <div class="item item-{{skinType}}">
         <div class="news-content">
-            <text class="meeting_date meeting_date-{{skinType}}">{{dateNums(meetingitem.dateNum)}} （{{meetingitem.week}}）</text>
+            <text class="meeting_date meeting_date-{{skinType}}">{{dateNums(meetingitem.dateNum)}}（{{meetingitem.week}}）</text>
         </div>
 
         <div class="line lineClass-{{skinType}}"></div>
@@ -27,8 +27,6 @@
 <script>
     var taoguba = require('../taoguba');
     var navigator = require('@weex-module/navigator')
-    var weexNavigator = require('@weex-module/weexNavigatorModule')
-    var weexEventModule = require('@weex-module/weexEventModule');
     module.exports = {
         created: function () {
             this.platform = this.$getConfig().env.platform;
@@ -39,7 +37,6 @@
             this.skinType = cskinType;
         },
         data: {
-            skinType: 0,
             meetingitem: {
                 "seq": 21,
                 "dateNum": 20170401,
@@ -76,68 +73,20 @@
                 return strtags.substring(0, strtags.length - 1);
 
             },
-//            topinglun:function(event) {
-//               console.log('topinglun');
-//               var name = "meeting/meeting_pinglun";
-//               var self = this;
-//               var url = taoguba.getDefaultUrl(name)+'?topicID='+self.meetingitem.feedid+'&type=R&pageSize=10';
-//               var params = {
-//                  'url': url,
-//                  'animated': 'true',
-//                  'options':{'topicID':self.meetingitem.feedid,'type':'R','pageSize':10
-//                  }
-//                };
-//                if (typeof window === 'object') {
-//                    navigator.push(params,event => {
-//                                //sunccess
-//                          } );
-//                }else{
-//                       weexNavigator.push(params,event => {
-//
-//                          } );
-//                }
-//            },
-            todetail: function (event) {
-                console.log('todetail');
-                var name = "meeting/meetingdetail";
-                var self = this;
-                //对象转成string
-                var meetingitem = JSON.stringify(self.meetingitem);
-
-                var url = taoguba.getDefaultUrl(name) + '?topicID=' + self.meetingitem.feedid + '&type=R&pageSize=10&meetingitem=' + encodeURIComponent(meetingitem);
-                var params = {
-                    'url': url,
-                    'animated': 'true',
-                    'options': {
-                        'topicID': self.meetingitem.feedid,
-                        'type': 'R',
-                        'pageSize': 10,
-                        'meetingitem': encodeURIComponent(meetingitem)
-                    }
-                };
-                if (typeof window === 'object' || this.platform == 'iOS') {
-                    navigator.push(params, event => {
-                        //sunccess
-                    });
-                } else {
-                    weexNavigator.push(params, event => {
-                    });
-                }
-            },
             getImgUrl: function (url) {
                 return taoguba.getImageUrl(url);
             },
         }
+
     }
 </script>
 
 <style>
     .item {
-        border-width: 1wx;
-        border-radius: 5wx;
+        /*border-width: 1wx;*/
+        /*border-radius: 5wx;*/
         margin: 8wx;
-        padding: 10wx;
-        flex: 1;
+        padding: 8wx;
     }
 
     .item-0 {
@@ -148,18 +97,9 @@
         border-color: #0e1929;
     }
 
-    .itemClass-0:active {
-        background-color: #dddddd;
-
-    }
-
-    .itemClass-1:active {
-        background-color: #132237;
-    }
-
     .news-content {
-        margin-left: 1wx;
-        margin-right: 15wx;
+        margin-left: 5wx;
+        margin-right: 5wx;
     }
 
     .meeting_date {
@@ -196,6 +136,8 @@
     }
 
     .meeting-stock {
+        margin-left: 5wx;
+        margin-right: 5wx;
         margin-top: 15wx;
         flex: 1;
         flex-direction: row;
@@ -205,7 +147,7 @@
         font-size: 16wx;
         justify-content: flex-start;
         align-items: flex-start;
-        flex: 2;
+        flex: 1;
     }
 
     .meeting_s_content {

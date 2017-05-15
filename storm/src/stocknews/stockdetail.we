@@ -1,164 +1,699 @@
 <template>
-    <div>
-    <navbar title="股市直播"></navbar>
-     <!--if (typeof window === 'object') {-->
-         <!--<text>{{myrichvaluejson.content}} </text>-->
-        <!--}else{-->
-         <myrichtext  style="width:750;height:300"> {{myrichvaluejson}} </myrichtext>
-        <!--}-->
-
-     <div class="news-bottom" >
-         <div class="news-txt">
-
-          </div>
-           <div class="news-txt">
-
-            </div>
-
-         <div class="news-reply">
-              <text class="txt">2018-02-01 16:00</text>
-         </div>
-     </div>
-     <taoguba-wxc-panel title="最新评论"/>
-    <list>
-         <refresh class="refresh-view" display="{{refresh_display}}" onrefresh="onrefresh">
-             <loading-indicator class="indicator" ></loading-indicator>
-             <text class="refresh-arrow" style="text-align:center;color:rgb(238,162,54)" if="{{refresh_display==='hide'}}">
-                 {{msg}}
-             </text>
-         </refresh>
-
-        <cell repeat="{{stockitem in stockArray}}">
-           <stock_detail_item stockitem="{{stockitem}}"></stock_detail_item>
-        </cell>
+    <div class="content_class content_class-{{skinType}}">
+        <navbar title="股市直播" if="{{navBar_display}}" type="{{skinType}}" shownleft="true"></navbar>
+        <list class="list content_class-{{skinType}} list-{{platform}}">
+            <refresh class="refresh-view refresh-view-{{skinType}}" display="{{refresh_display}}" onrefresh="onrefresh"
+                     refreshing="{{refreshing}}">
+                <loading-indicator class="indicator"></loading-indicator>
+                <text class="refresh-arrow refresh-arrow-{{skinType}}">
+                    下拉刷新
+                </text>
+            </refresh>
+            <!--<text>{{myrichvaluejson.content}} </text>-->
+            <cell>
+                <div class="news-content">
+                    <!--<myrichtext if={{!is_ios_text}} class="content_class-{{skinType}} richText richText-{{skinType}}"-->
+                                <!--style="height:{{richheight}}"> {{myrichvaluejson}}-->
+                    <!--</myrichtext>-->
+                    <mystockview if={{!is_ios_text}} class="content_class-{{skinType}} richText richText-{{skinType}}"
+                                  >{{myrichvaluejson}}</mystockview>
+                    <myrichtext if={{is_ios_text}} class="content_class-{{skinType}} richText richText-{{skinType}}">
+                        {{myrichvaluejson}}
+                    </myrichtext>
+                </div>
+                <div class="news-time">
+                    <text class="txtTime txtTime-{{skinType}}">{{formatTime(creatdt)}}</text>
+                </div>
+                <div class="divLine divLine-{{skinType}}"></div>
+                <div class="divPinlunClass divPinlunClass-{{skinType}}">
+                    <text class="txtPinlunClass txtPinlunClass-{{skinType}}">最新评论</text>
+                </div>
+                <div class="lineClass lineClass-{{skinType}}"></div>
+            </cell>
+            <cell class="divLastestClass content_class-{{skinType}}" repeat="{{stockitem in stockArray}}">
+                <stock_detail_item stockitem="{{stockitem}}"></stock_detail_item>
+            </cell>
+            <cell if="{{noshuoshuo}}">
+                <div class="divMoreClass">
+                    <text class="txt_moreClass txt_moreClass-{{skinType}}">暂无评论</text>
+                </div>
+            </cell>
+            <cell if="{{showmore}}">
+                <div class="divMoreClass" onclick="{{findMore()}}">
+                    <text class="txt_moreClass txt_moreClass-{{skinType}}">查看更多</text>
+                </div>
+            </cell>
         </list>
+        <div class="buttom buttom-{{skinType}} buttom_{{platform}}">
+            <div class="buttom_left buttom_left-{{skinType}}" onclick="{{onclickTucao}}">
+                <image class="img_tucao_class" src="{{getImgUrl('././images/tucao.png')}}"/>
+                <text class="txt_tucao_class txt_tucao_class-{{skinType}}"> 吐槽点什么吧</text>
+            </div>
+            <image class="img_fenxiang_class" onclick="toshare" src="{{getImgUrl('././images/fenxiang_grey.png')}}"/>
+        </div>
     </div>
 </template>
 
 <script>
- require('../template/taoguba-wxc-panel.we')
-require('../template/navbar.we')
+    require('../template/taoguba-wxc-panel.we')
+    require('../template/navbar.we')
+    var taoguba = require('../taoguba');
     require('weex-components');
-     require('./stock_detail_item.we')
+    var date = require('../common/date');
+    require('./stock_detail_item.we')
     var stream = require('@weex-module/stream');
     var modal = require('@weex-module/modal');
-     var taoguba = require('../taoguba');
+    var event = require('@weex-module/event');
+    var taoguba = require('../taoguba');
+    var weexEventModule = require('@weex-module/weexEventModule');
+    var weexModalUIModule = require('@weex-module/weexModalUIModule');
+    var globalEventModule = require('@weex-module/globalEvent');
     module.exports = {
 
-     data:{
-            refresh_display:'hide',
-            stockArray:[],
-            test:'s-test',
-            msg:'下拉刷新',
+        data: {
+            refreshing: 'false',
+            is_ios_text: 0,
+            refresh_display: 'hide',
+            stockArray: [],
+            test: 's-test',
+            msg: '下拉刷新',
             screenHeight: 0,
-            myrichvaluejson:{
-
-            }
-         },
-created: function(){
-               var self = this;
-               self.refresh();
-                this.screenHeight = this.$getConfig().env.deviceHeight ;
-
+            title: '股市直播',
+            richheight: 0,
+            myrichvaluejson: {},
+            type: 'N',//type N：新闻 T：帖子 R:日历 O:吐槽区
+            topicID: 0,
+            refMsgID: 0,
+            pageSize: 10,
+            skinType: 0,
+            showLoading: 'hide',
+            showmore: false,
+            userName: '',
+            navBar_display: true,
+            userID: '',
+            content: '',
+            creatdt: 1493784390000,
+            platform: '',
+            noshuoshuo: false,
+            myRichTextColor: [
+                '#666666',
+                '#999999'
+            ],
+            tagTextColor: [
+                '#1191f6',
+                '#005e91'
+            ],
         },
-        methods:{
-            onrefresh:function(e){
+        created: function () {
+            var self = this;
+            this.platform = this.$getConfig().env.platform;
+            this.screenHeight = this.$getConfig().env.deviceHeight;
+            this.skinType = this.$getConfig().skinType;
+            if (self.platform == 'iOS') {
+                self.navBar_display = false;
+                self.is_ios_text = 1;
+                event.setNavbarTitle(this.title);
+            }
+            var cuserName;
+            var ccontent;
+            var ccreatdt;
+            var ctopicID;
+            var cpageSize;
+            var ctype;
+            var crefMsgID;
+            var cuserID;
+            if (self.platform == 'iOS' || self.platform == 'android') {
+                cuserName = decodeURI(self.$getConfig().userName);
+                ccontent = decodeURIComponent(self.$getConfig().content);
+                ccreatdt = self.$getConfig().creatdt;
+                ctopicID = self.$getConfig().topicID;
+                crefMsgID = self.$getConfig().refMsgID;
+                cuserID = self.$getConfig().userID;
+                cpageSize = self.$getConfig().pageSize;
+                ctype = self.$getConfig().type;
+            } else {
+                cuserName = decodeURI(taoguba.getUrlParam('userName'));
+                ccontent = decodeURIComponent(taoguba.getUrlParam('content'));
+                ccreatdt = taoguba.getUrlParam('creatdt');
+                ctopicID = taoguba.getUrlParam('topicID');
+                crefMsgID = taoguba.getUrlParam('refMsgID');
+                cuserID = taoguba.getUrlParam('userID');
+                cpageSize = taoguba.getUrlParam('pageSize');
+                ctype = taoguba.getUrlParam('type');
+            }
+
+            self.userName = cuserName;
+            self.content = ccontent;
+            self.creatdt = ccreatdt;
+            console.log('ccreatdt==' + ccreatdt + ';cuserName==' + cuserName + 'ccontent==' + ccontent);
+            self.topicID = ctopicID;
+            self.refMsgID = crefMsgID;
+            self.userID = cuserID;
+            self.pageSize = cpageSize;
+            self.type = ctype;
+            self.type = 'R';//默认全改成R
+
+
+            console.log('self.pageSize####' + cpageSize);
+
+            var myrichvaluejson = {
+                content: self.userName  + self.content,
+                myrichvalue: [],
+                tagTextColor:self.tagTextColor[self.skinType],
+            }
+
+            var myrich = {};
+            myrich.strText = self.userName;
+            myrich.strTextColor = '#ff0000';
+            myrich.strTextSize = 18;
+            myrich.onClickType = 0;
+            myrichvaluejson.myrichvalue.push(myrich);
+
+            myrich = {};
+            myrich.strText = self.content;
+            myrich.strTextColor = self.myRichTextColor[self.skinType];
+            myrich.strTextSize = 18;
+            myrich.onClickType = 0;
+            myrichvaluejson.myrichvalue.push(myrich);
+
+//            self.richheight = 150 + 90 * myrichvaluejson.content.length / 50;
+//            console.log('richheight===' + self.richheight);
+
+            self.myrichvaluejson = myrichvaluejson;
+
+            self.autoRefresh();
+        },
+        methods: {
+            autoRefresh: function () {
+                var self = this;
+                this.$call('timer', 'setTimeout', function () {
+                    self.refresh_display = 'show';
+                    self.refreshing = "true";
+                }, 20);
+            },
+            toshare: function (e) {
+//                    {
+//                    "shareContent":"淘股吧是中国知名的移动互联投资社交化平台",
+//                    "shareUrl":"http://m.taoguba.com.cn/downloadApp",
+//                    "shareTitle":"v_5.5.5",
+//                    "ShareImgResID":"",
+//                    "ShareImgUrl":"",
+//                    "SHARE_MEDIA":["QZONE","WEIXIN"]
+//                    }
+
+                var self = this;
+                var shareUrl;
+                var type = self.type;
+                if ("T" == type) {
+                    shareUrl = taoguba.getArticle() + self.topicID + '/1';
+                } else {
+                    shareUrl = taoguba.getShuoShuo() + 'userID=1100914&feedID=' + self.topicID;
+                }
+                var shareJson = {
+                    "shareContent": self.content,
+                    "shareUrl": shareUrl,
+                    "shareTitle": "股市直播",
+                    "ShareImgResID": "",
+                    "ShareImgUrl": "",
+                    "SHARE_MEDIA": []
+                };
+                weexModalUIModule.Share(shareJson);
+                // console.log('stockdetail toshare==');
+            },
+            formatTime: function (time) {
+                var strTime;
+                if (this.platform == 'iOS') {
+                    var event_ios = require('@weex-module/event');
+                    strTime = date.formatDate(new Date(time), "yyyy-MM-dd hh:mm");
+                }
+                else if (typeof window === 'object') {
+                    strTime = date.formatDate(new Date(time), "yyyy-MM-dd hh:mm");
+                } else {
+                    strTime = weexEventModule.TimeFormate("1", time, "yyyy-MM-dd HH:mm");
+//                     strTime =  date.formatDate(new Date(time),"yyyy-MM-dd hh:mm");
+                }
+
+//                weexEventModule.ShowLogI("","strTime-->:"+strTime);
+                return strTime;
+            },
+
+//            onloading:function(e){
+//                console.log('onloading');
+//                var self = this;
+//                self.showLoading = 'show';
+//                self.pageNo=self.pageNo+1;
+//                self.refresh();
+//            },
+
+            onrefresh: function (e) {
                 var self = this;
                 self.msg = '下拉刷新';
                 self.refresh_display = 'show';
-                this.$call('timer','setTimeout',function(){
-                   self.refresh_display = 'hide';
-                },2000);
+                this.$call('timer', 'setTimeout', function () {
+                    self.refresh_display = 'hide';
+                }, 2000);
                 self.refresh();
             },
 
-              refresh:function(){
-                      var self = this;
-                     stream.fetch({ 
-                             method:'GET', 
-                             url:taoguba.apiGetForums()+"blockID=1&pageNo=1&flag=0", 
-                              body:{
-                              "url":taoguba.apiGetForums(),
-                                      "blockID":"1",
-                                      "pageNo":"1",
-                                      "flag":"0"
-                               },
-                               headers:{
-                                  'Content-Type':'application/x-www-form-urlencoded',
-                               }
-                              },
-                          function(ret){ 
-                                     if(!ret.ok){ 
- //                                    modal.toast({"message":"Network Error!",'duration':2}); 
-                                    }else{ 
-                                         var json = JSON.parse(ret.data); 
-                                         for(var i = 0; i < json.dto.length;i++){
-                                            //self.stockArray.push(json.dto[i]);
+            refresh: function () {
+                var self = this;
+                var url = taoguba.apiGetComplainMessage();
+                var body = {};
+
+                if (self.platform == 'iOS' || self.platform == 'android') {
+                    body.url = url;
+                    body.topicID = self.topicID;
+                    body.pageSize = self.pageSize;
+                    body.type = self.type;
+                }
+                stream.fetch({
+                        method: 'GET',
+                        url: url + 'topicID=' + self.topicID + '&pageSize=' + self.pageSize + '&type=' + self.type,
+                        body: body,
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            token: taoguba.getToken(),
+                        }
+                    },
+                    function (ret) {
+                        self.refresh_display = 'hide';
+                        self.refreshing = "false";
+                        var result = JSON.stringify(ret);
+                        // console.log('stockdetail.we-->' + result);
+                        if (!ret.ok) {
+                            //                                    modal.toast({"message":"Network Error!",'duration':2}); 
+                        } else {
+
+
+                            self.stockArray.splice(0, self.stockArray.length);
+
+                            var json = ret.data;
+                            //是String类型才解析
+                            if (json && typeof(json) != 'object') {
+                                try {
+                                    json = eval('(' + ret.data + ')');
+                                } catch (e) {
+                                }
+
+                            }
+                            var resultStatus;
+                            if (typeof window === 'object' || self.platform == 'iOS') {
+                                if (json && json.status == true) {
+                                    resultStatus = '1';
+                                } else {
+                                    resultStatus = '0';
+                                }
+                            } else {
+                                resultStatus = weexEventModule.isStatus(json.errorCode, json.status);
+                            }
+                            //                                console.log('resultStatus=='+resultStatus);
+
+                            if (resultStatus == '1') {
+                                if (json.dto) {
+                                    if (json.dto && json.dto.length > 0) {
+                                        for (var i = 0; i < json.dto.length; i++) {
                                             var stockitem = json.dto[i];
+                                            stockitem.img = taoguba.getLogoImageUrl(stockitem.img);
+                                            self.stockArray.push(stockitem);
+
+                                        }
+                                        if (self.stockArray.length >= 3) {
+                                            self.stockArray.splice(3, self.stockArray.length);
+                                            self.showmore = true;
+                                        } else {
+                                            self.showmore = false;
+                                        }
+                                        self.noshuoshuo = false;
+                                    } else {
+                                        self.noshuoshuo = true;
+                                    }
+                                } else {
+                                    self.noshuoshuo = true;
+                                }
+                            } else {
+                                if (json.errorCode == '99') {
+                                    self.noshuoshuo = true;
+                                } else {
+                                    self.noshuoshuo = false;
+                                    weexModalUIModule.toast(json.errorMessage);
+                                }
+
+//                                               if (typeof window === 'object'){
+//                                                    console.log(json.errorMessage);
+//                                               }else {
+//                                                    weexModalUIModule.toast(json.errorMessage);
+//                                               }
+
+                            }
 
 
-                                             var myrichvaluejson={
-                                              content:stockitem.userName+ stockitem.subject+stockitem.subject+stockitem.subject,
-                                             myrichvalue:[]
-                                             }
+                        }
+                    },
+                    function (res) {
+                    }
+                );
 
+            },
+            changeSkin: function (skinTypes) {
+                var cskinType = this.$getConfig().skinType;
+                if (cskinType == undefined) {
+                    cskinType = taoguba.getUrlParam('skinType');
+                }
+                if (cskinType == undefined) {
+                    cskinType = 0;
+                }
+                this.skinType = cskinType;
 
+            },
+            onclickTucao: function () {
+                if (this.platform == 'iOS') {
+                    var json = {
+                        feedID: this.topicID,
+                        refMsgUserID: this.userID,
+                        refMsgID: this.topicID,
+                        type: 'R',
+                        topicID: this.topicID,
+                    }
+                    event.enterToEdit(json);
 
-                                             var myrich={};
-                                             myrich.strText = stockitem.userName;
-                                             myrich.strTextColor = '#ff0000';
-                                             myrich.strTextSize = 22;
-                                             myrich.onClickType=0;
-                                              myrichvaluejson.myrichvalue.push(myrich);
+                } else if (this.platform == 'android') {
+                    //N:18 T:19 O:20 R:21
+                    var optionJson = [
+                        {
+                            "intentKey": "CURRENT_SEND_MODE_KEY",
+                            "intentKeyValueClassName": "int",
+                            "intentKeyValue": 21
 
-                                             myrich={};
-                                             myrich.strText = stockitem.subject+stockitem.subject+stockitem.subject;
-                                             myrich.strTextColor = '#000000';
-                                             myrich.strTextSize = 25;
-                                             myrich.onClickType=0;
-                                             myrichvaluejson.myrichvalue.push(myrich);
+                        }, {
+                            "intentKey": "MSG_AND_REMSG_BEAN_KEY",
+                            "intentKeyValueClassName": "MsgAndReMsgBean",
+                            "intentKeyValue": "{\"feedID\":" + this.topicID + ",\"refMsgUserID\":" + this.userID + ",\"refMsgID\":" + this.topicID + "}"
+                        }
+                    ]
+                    weexEventModule.startOtherNativeActivity2('com.taoguba.app.activity.SendEditActivity', optionJson);
+                } else {
 
+                }
+            },
+            findMore: function () {
+                if (this.platform == 'iOS') {
+                    event.pushViewController('ShuoViewController', {
+                        'userID': this.userID,
+                        'shuoTopicID': this.topicID
+                    });
+                } else if (this.platform == 'android') {
+                    var optionJson = {
+                        'TOPIC_FEED_ID_KEY': this.topicID,
+                        'TOPIC_USER_ID': this.userID
+                    }
+                    weexEventModule.startOtherNativeActivity('com.taoguba.app.activity.ShuoWebViewActivity', optionJson);
+                } else {
 
-
-                                             self.myrichvaluejson = myrichvaluejson;
-                                             self.stockArray.push(stockitem);
-                                         }
-                              } },
-                              function(res){  }
-                                   );
-
-           }
-
-          }
+                }
+            },
+            getImgUrl: function (url) {
+//                     url = url+this.type+'.png';
+                return taoguba.getImageUrl(url);
+            },
+        },
+        ready(){
+            this.changeSkin(this.skinType);
+            var self = this;
+            globalEventModule.addEventListener("weekCallback", function (options) {
+                var callback_value = options.setRefresh;
+                if (callback_value == '1') {
+                    self.refresh();
+                }
+            });
+        }
 
     }
 </script>
 
 <style>
-    .refresh-view{
-        height:100;
-        width:750;
-        align-items:center;
+    .news-content {
+        margin-top: 18wx;
+        margin-left: 10wx;
+        margin-right: 10wx;
     }
 
-    .indicator{
-        width:60;
-        height:60;
-        color:#889967;
+    .content_class {
+        flex-direction: column;
+        flex: 1;
     }
-   .news-bottom{
-        margin-top:15;
-        margin-bottom:15;
-        flex-direction:row;
+
+    .content_class-0 {
+        background-color: #f5f5f5;
     }
-  .news-reply,.news-txt,.news-share{
-         flex:1;
-         justify-content:center;
-         align-items:center;
-         flex-direction:row;
-     }
- .txt{
-         opacity:0.3;
-         font-size:30;
-     }
+
+    .content_class-1 {
+        background-color: #15253d;
+    }
+
+    .list {
+        position: absolute;
+        margin-top: 45wx;
+        margin-bottom: 50wx;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+    }
+
+    .list-iOS {
+        top: -50wx;
+        bottom: 60wx;
+    }
+
+    .richText {
+        /*    padding-left: 10wx;
+            padding-right: 10wx;
+            margin-top: 10wx;*/
+    }
+
+    .richText-0 {
+        color: #333333;
+    }
+
+    .richText-1 {
+        color: #999999;
+    }
+
+    .divLine {
+        height: 8wx;
+        margin-top: 10wx;
+        border-width: 1wx;
+        border-style: solid;
+    }
+
+    .divLine-0 {
+        background-color: #EEEEEE;
+        border-color: #DDDDDD;
+    }
+
+    .divLine-1 {
+        background-color: #0e1929;
+        border-color: #0e1929;
+    }
+
+    .divPinlunClass {
+        height: 45wx;
+        justify-content: flex-start;
+        padding-left: 10wx;
+        align-items: center;
+        flex-direction: row;
+    }
+
+    .divPinlunClass-0 {
+        background-color: #f5f5f5;
+    }
+
+    .divPinlunClass-1 {
+        background-color: #15253d;
+    }
+
+    .txtPinlunClass {
+        font-size: 15wx;
+    }
+
+    .txtPinlunClass-0 {
+        color: #666666;
+    }
+
+    .txtPinlunClass-1 {
+        color: #999999;
+    }
+
+    .lineClass {
+        height: 1wx;
+    }
+
+    .lineClass-0 {
+        background-color: #eeeeee;
+    }
+
+    .lineClass-1 {
+        background-color: #0e1929;
+    }
+
+    .divLastestClass {
+        /*margin-top: 10dp;*/
+    }
+
+    .refresh-arrow {
+        margin-top: 10wx;
+        height: 20wx;
+        width: 200wx;
+        font-size: 12wx;
+        text-align: center;
+        align-items: center;
+    }
+
+    .refresh-arrow-0 {
+        color: #BBBBBB;
+    }
+
+    .refresh-arrow-1 {
+        color: #666666;
+    }
+
+    .refresh-view {
+        width: 750;
+        height: 80wx;
+        display: -ms-flex;
+        display: -webkit-flex;
+        display: flex;
+        -ms-flex-align: center;
+        -webkit-align-items: center;
+        -webkit-box-align: center;
+        align-items: center;
+        justify-content: center;
+
+    }
+
+    .refresh-view-0 {
+        background-color: #f5f5f5;
+    }
+
+    .refresh-view-1 {
+        background-color: #15253d;
+    }
+
+    .indicator {
+        height: 30wx;
+        width: 30wx;
+        color: #889967;
+    }
+
+    .news-time {
+        justify-content: flex-end;
+        align-items: center;
+        flex-direction: row;
+        margin-right: 10wx;
+    }
+
+    .txtTime {
+        font-size: 12wx;
+    }
+
+    .txtTime-0 {
+        color: #BBBBBB;
+    }
+
+    .txtTime-1 {
+        color: #666666;
+    }
+
+    .buttom {
+        flex-direction: row;
+        justify-content: flex-start;
+        height: 50wx;
+        flex: 1;
+        background-color: #EEEEEE;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+    }
+
+    .buttom-0 {
+        background-color: #eeeeee;
+    }
+
+    .buttom-1 {
+        background-color: #192c46;
+    }
+
+    .buttom_iOS {
+        bottom: 60wx;
+    }
+
+    .txt_tucao_class {
+        margin-left: 5wx;
+        font-size: 16wx;
+    }
+
+    .txt_tucao_class-0 {
+        color: #555555;
+    }
+
+    .txt_tucao_class-1 {
+        color: #999999;
+    }
+
+    .buttom_left {
+        flex: 1;
+        margin-left: 15wx;
+        margin-right: 15wx;
+        flex-direction: row;
+        align-items: center;
+        margin-top: 5wx;
+        margin-bottom: 5wx;
+        border-radius: 20wx;
+    }
+
+    .buttom_left-0 {
+        background-color: #FFFFFF;
+    }
+
+    .buttom_left-1 {
+        background-color: #0e1929;
+    }
+
+    .img_tucao_class {
+        width: 32wx;
+        height: 29wx;
+        margin-left: 10wx;
+        padding: 5wx;
+    }
+
+    .img_fenxiang_class {
+        width: 30wx;
+        height: 30wx;
+        align-items: center;
+        margin-top: 5wx;
+        margin-right: 10wx;
+        justify-content: flex-end;
+        padding: 6wx;
+    }
+
+    .divMoreClass {
+        height: 45wx;
+        flex: 1;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .txt_moreClass {
+        font-size: 15wx;
+    }
+
+    .txt_moreClass-0 {
+        color: #bbbbbb;
+    }
+
+    .txt_moreClass-1 {
+        color: #666666;
+    }
 </style>

@@ -1,182 +1,481 @@
 <template>
     <div>
-    <list>
-         <refresh class="refresh-view" display="{{refresh_display}}" onrefresh="onrefresh">
-             <loading-indicator class="indicator" ></loading-indicator>
-             <text class="refresh-arrow" style="text-align:center;color:rgb(238,162,54)" if="{{refresh_display==='hide'}}">
-                 {{msg}}
-             </text>
-         </refresh>
-        <cell  repeat="{{shuoshuoitem in  shuoshuoArray}}">
-
+        <!--scrolltoposition="{{scrolltoposition}}"-->
+        <list class="list list-{{skinType}}">
+            <refresh class="refresh-view refresh-view-{{skinType}}" display="{{refresh_display}}" onrefresh="onrefresh"
+                     refreshing="{{refreshing}}">
+                <loading-indicator class="indicator"></loading-indicator>
+                <text class="refresh-arrow refresh-arrow-{{skinType}}">
+                    查看更多吐槽消息
+                </text>
+            </refresh>
+            <cell repeat="{{shuoshuoitem in  shuoshuoArray}}" id="{{shuoshuoitem.idfeedID}}">
                 <shuoshuo_item id="sub" shuoshuoitem="{{shuoshuoitem}}"></shuoshuo_item>
-
-            <div class="line"></div>
-        </cell>
+            </cell>
+            <!--<loading  class="loading-view loading-view-{{skinType}}" display="{{showLoading}}"  onloading="onloading">-->
+            <!--<text class="refresh-arrow refresh-arrow-{{skinType}}"   >-->
+            <!--加载更多-->
+            <!--</text>-->
+            <!--<loading-indicator class="indicator" ></loading-indicator>-->
+            <!--</loading>-->
         </list>
     </div>
 </template>
 
 <script>
-
+    var date = require('../common/date');
     require('weex-components');
-     require('../template/navbar.we')
-     require('./shuoshuo_item.we')
+    require('../template/navbar.we')
+    require('./shuoshuo_item.we')
     var stream = require('@weex-module/stream');
     var modal = require('@weex-module/modal');
-     var weexEventModule =  require('@weex-module/weexEventModule');
-     var taoguba = require('../taoguba');
-       var globalEventModule = require('@weex-module/globalEvent');
+    var dom = require('@weex-module/dom');
+    var websocket = require('@weex-module/webSocket');
+    var weexEventModule = require('@weex-module/weexEventModule');
+    var ios_event = require('@weex-module/event');//ios用这个
+
+    var taoguba = require('../taoguba');
+    var weexModalUIModule = require('@weex-module/weexModalUIModule');
     module.exports = {
 
-     data:{
-            refresh_display:'hide',
-            shuoshuoArray:[],
-            test:'s-test',
-            msg:'下拉刷新',
-            textClass:'dayclass',
-            TAG:'shuoshuo.we'
-         },
+        data: {
+            refreshing: 'false',
+            refresh_display: 'hide',
+            shuoshuoArray: [],
+            test: 's-test',
+            msg: '下拉刷新',
+            textClass: 'dayclass',
+            TAG: 'shuoshuo.we',
+            skinType: 0,
+            showLoading: 'hide',
+            pageNo: 1,
+            isFirst: 1,
+            feedID: 0,//分页使用
+            platform: '',
+            loginUserId: '',
+            newDate: new Date().getTime()
+            //scrolltoposition:0
 
-        methods:{
-            onrefresh:function(e){
+        },
+
+        methods: {
+            autoRefresh: function () {
+                var self = this;
+                self.pageNo = 0;
+                this.$call('timer', 'setTimeout', function () {
+                    self.refreshing = "true";
+                    self.isFirst = 0;
+                }, 200);
+            },
+            scrollToBottom: function (e) {
+                var self = this;
+                console.log('scrollToElement');
+                if (self.shuoshuoArray.length > 0) {
+                    var id = self.shuoshuoArray[self.shuoshuoArray.length - 1].idfeedID;
+                    var offset = self.shuoshuoArray.length - 1;
+                    const el = this.$el(id);
+                    dom.scrollToElement(el, {offset: offset})
+                }
+            },
+            onloading: function (e) {
+                console.log('onloading');
+                var self = this;
+                self.showLoading = 'show';
+                self.pageNo = self.pageNo + 1;
+                self.refresh();
+            },
+            onrefresh: function (e) {
+//                var self = this;
+//                self.newDate = new Date().getTime();
+//                self.msg = '下拉刷新';
+//                self.pageNo=1;
+//                self.feedID=0;
+//                self.refresh_display = 'show';
+//                self.refresh();
+
                 var self = this;
                 self.msg = '下拉刷新';
+                self.pageNo = self.pageNo + 1;
                 self.refresh_display = 'show';
-                this.$call('timer','setTimeout',function(){
-                   self.refresh_display = 'hide';
-                },2000);
+                this.$call('timer', 'setTimeout', function () {
+                    self.refresh_display = 'hide';
+                }, 2000);
                 self.refresh();
             },
 
-             refresh:function(){
-                       var self = this;
-                      stream.fetch({ 
-                              method:'GET', 
-                              url:taoguba.apiGetForums()+"blockID=1&pageNo=1&flag=0", 
-                               body:{
-                               "url":taoguba.apiGetForums(),
-                                       "blockID":"1",
-                                       "pageNo":"1",
-                                       "flag":"0"
-                                },
-                                headers:{
-                                   'Content-Type':'application/x-www-form-urlencoded',
+            refresh: function () {
+                var self = this;
+                var url = taoguba.apiGetTucaoList();
+                var body = {};
+
+                if (self.platform == 'iOS' || self.platform == 'android') {
+                    body.url = url;
+                    body.pageNo = self.pageNo;
+                    body.feedID = self.feedID;
+                }
+                stream.fetch({
+                        method: 'GET',
+                        url: url + 'pageNo=' + self.pageNo + '&feedID=' + self.feedID,
+                        body: body,
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            token: taoguba.getToken(),
+                        }
+                    },
+                    function (ret) {
+                        self.refresh_display = 'hide';
+                        self.showLoading = 'hide';
+                        self.refreshing = "false";
+                        var result = JSON.stringify(ret);
+                        // console.log('shuoshuo.we result  ==' + result);
+                        console.log("self.loginUserId :" + self.loginUserId);
+
+                        if (!ret.ok) {
+                            //                                    modal.toast({"message":"Network Error!",'duration':2}); 
+                        } else {
+                            if (self.pageNo == 1) {
+                                self.shuoshuoArray.splice(0, self.shuoshuoArray.length);
+                            }
+                            var json = ret.data;
+                            //是String类型才解析
+                            if (json && typeof(json) != 'object') {
+                                try {
+                                    json = eval('(' + ret.data + ')');
+                                } catch (e) {
                                 }
-                               },
-                           function(ret){ 
-                                      if(!ret.ok){ 
-  //                                    modal.toast({"message":"Network Error!",'duration':2}); 
-                                     }else{ 
-                                          var json = JSON.parse(ret.data); 
-                                          for(var i = 0; i < json.dto.length;i++){
-                                              //self.shuoshuoArray.push(json.dto[i]);
-                                               var stockitem = json.dto[i];
+
+                            }
+                            var resultStatus;
+                            if (typeof window === 'object' || self.platform == 'iOS') {
+                                if (json && json.status == true) {
+                                    resultStatus = '1';
+                                } else {
+                                    resultStatus = '0';
+                                }
+                            } else {
+                                resultStatus = weexEventModule.isStatus(json.errorCode, json.status);
+                            }
+                            //                                console.log('resultStatus=='+resultStatus);
+
+                            if (resultStatus == '1') {
+                                if (json.dto) {
+                                    if (json.dto && json.dto.length > 0) {
+
+                                        for (var i = 0; i < json.dto.length; i++) {
+                                            var stockitem = json.dto[i];
+                                            stockitem.img = taoguba.getLogoImageUrl(stockitem.img);
+                                            //吐槽列表聊天不显示主贴内容；评论显示
+                                            if (stockitem.fromType != "TC") {
+                                                if (stockitem.refContent && stockitem.refContent.length > 50) {
+                                                    stockitem.refContent = stockitem.refContent.substring(0, 50) ;
+                                                } else {
+                                                    stockitem.refContent = stockitem.refContent;
+                                                }
+                                            } else {
+                                                stockitem.refContent = '';
+                                            }
 
 
-                                               var myrichvaluejson={
-                                                   content:stockitem.userName+'对'+stockitem.userName+ '说：'+stockitem.subject,
-                                                   myrichvalue:[]
-                                               };
+                                            var refreshtime = stockitem.createdt;
+                                            if (Math.abs(self.newDate - stockitem.createdt) >= 30 * 60 * 1000 || i == 0) {
+                                                //默认刷新时间
+                                                stockitem.newrefresh = true;
+                                                self.newDate = stockitem.createdt;
+                                            } else {
 
-                                               var myrich={};
-                                               myrich.strText = stockitem.userName;
-                                               myrich.strTextColor = '#ff0000';
-                                               myrich.strTextSize = 22;
-                                               myrich.onClickType=0;
-                                               myrichvaluejson.myrichvalue.push(myrich);
+                                                stockitem.newrefresh = false;
+                                            }
+                                            stockitem.refreshtime = refreshtime;
 
-                                               myrich={};
-                                               myrich.strText = '对';
-                                               myrich.strTextColor = '#000000';
-                                               myrich.strTextSize = 22;
-                                               myrich.onClickType=0;
-                                               myrichvaluejson.myrichvalue.push(myrich);
+                                            //判断userid是否是登陆用户自己
+                                            if (self.loginUserId == stockitem.userID) {
+                                                stockitem.selfuser = 1;
+                                            } else {
+                                                stockitem.selfuser = 0;
+                                            }
 
-                                               myrich={};
-                                               myrich.strText = stockitem.userName;
-                                               myrich.strTextColor = '#ff0000';
-                                               myrich.strTextSize = 22;
-                                               myrich.onClickType=0;
-                                               myrichvaluejson.myrichvalue.push(myrich);
+                                            self.feedID = stockitem.feedID;
+                                            stockitem.idfeedID = 'id' + stockitem.feedID;
+
+                                            self.shuoshuoArray.unshift(stockitem);
 
 
-                                               myrich={};
-                                               myrich.strText = '说：'+stockitem.subject;
-                                               myrich.strTextColor = '#000000';
-                                               myrich.strTextSize = 22;
-                                               myrich.onClickType=0;
-                                               myrichvaluejson.myrichvalue.push(myrich);
+//                                                          var stockitem = json.dto[i];
+//                                                          self.feedID = stockitem.feedID;
+//
+//
+//                                                          var myrichvaluejson={
+//                                                              content:stockitem.userName+'对'+stockitem.refUserName+ '说：'+stockitem.content,
+//                                                              myrichvalue:[]
+//                                                          };
+//
+//                                                          var myrich={};
+//                                                          myrich.strText = stockitem.userName;
+//                                                          myrich.strTextColor = '#ff0000';
+//                                                          myrich.strTextSize = 18;
+//                                                          myrich.onClickType=0;
+//                                                          myrichvaluejson.myrichvalue.push(myrich);
+//
+//                                                          myrich={};
+//                                                          myrich.strText = '对';
+//                                                          myrich.strTextColor = '#000000';
+//                                                          myrich.strTextSize = 18;
+//                                                          myrich.onClickType=0;
+//                                                          myrichvaluejson.myrichvalue.push(myrich);
+//
+//                                                          myrich={};
+//                                                          myrich.strText = stockitem.refUserName;
+//                                                          myrich.strTextColor = '#ff0000';
+//                                                          myrich.strTextSize = 18;
+//                                                          myrich.onClickType=0;
+//                                                          myrichvaluejson.myrichvalue.push(myrich);
+//
+//
+//                                                          myrich={};
+//                                                          myrich.strText = '说：'+stockitem.content;
+//                                                          myrich.strTextColor = '#000000';
+//                                                          myrich.strTextSize = 18;
+//                                                          myrich.onClickType=0;
+//                                                          myrichvaluejson.myrichvalue.push(myrich);
+//
+//
+//                                                          stockitem.myrichvalue = myrichvaluejson;
+//
+//                                                          stockitem.height = 100+90*stockitem.content.length/55;
+//                                                          self.shuoshuoArray.push(stockitem);
+                                        }
+//                                                       self.scrolltoposition = self.shuoshuoArray.length;
+                                        if (self.pageNo == 1) {
+                                            self.$call('timer', 'setTimeout', function () {
+                                                self.scrollToBottom();
+                                            }, 2000);
+                                        }
+                                    } else {
+                                        if (self.pageNo == 1) {
+                                            if (self.platform == 'iOS') {
+                                                //modal.toast({"message":"木有新的数据",'duration':2}); 
+                                            } else if (self.platform == 'android') {
+                                                weexModalUIModule.toast("木有新的数据");
+                                            }
+                                        } else {
+                                            if (self.platform == 'iOS') {
+                                                // modal.toast({"message":"木有更多数据",'duration':2}); 
+                                            } else if (self.platform == 'android') {
+                                                weexModalUIModule.toast("木有更多数据");
+                                            } else {
+                                                console.log("木有更多数据");
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                if (typeof window == 'object') {
+                                    console.log(json.errorMessage);
+                                } else {
+                                    weexModalUIModule.toast(json.errorMessage);
+                                }
+                            }
 
 
-                                               stockitem.myrichvalue = myrichvaluejson;
-
-                                               stockitem.height = 120+100*stockitem.subject.length/20;
-                                               self.shuoshuoArray.push(stockitem);
-                                          }
-                               } },
-                               function(res){  }
-                                    );
+                        }
+                    },
+                    function (res) {
+                    }
+                );
 
             },
+            connect: function () {
+                websocket.WebSocket(taoguba.getaZhiboWebSocet(), '');//ws://echo.websocket.org
+                var self = this;
+                self.onopeninfo = 'connecting...'
+                websocket.onopen = function (e) {
+                    self.onopeninfo = 'websocket open';
+                    console.log('onopen==')
+                }
+                websocket.onmessage = function (ret) {
+                    self.onmessage = ret.data;
+                    console.log('onmessage==' + ret.data)
+                    var json = ret.data;
+                    //是String类型才解析
+                    if (json && typeof(json) != 'object') {
+                        try {
+                            json = eval('(' + ret.data + ')');
+                        } catch (e) {
 
-               getOptions: function() {
-                     var self = this;
-                     this.themetype = this.$getConfig().themetype
-                    // weexEventModule.ShowLogI(this.TAG,this.themetype);
-                     if(this.themetype==0){
-                            this.textClass='dayclass'
-                     }else{
-                            this.textClass='nightclass'
-                     }
-//发送广播
-//                     this.$broadcast('changeSkin', {
-//                               "skintype": "11"
-//                     })
-               }
+                        }
+                    }
+                    if (json.reply && 'TUCAO' == json.reply) {
+                        self.receiveStockItem(json.dto);
+                    }
+                }
+                websocket.onerror = function (e) {
+                    self.onerrorinfo = e.data;
+                    console.log('onerrorinfo==' + e.data)
+                }
+                websocket.onclose = function (e) {
+                    self.onopeninfo = '';
+                    self.onerrorinfo = e.code;
+                    console.log('onclose==' + e.code)
+                }
+            },
+            send: function (e) {
+//                websocket.send(this.txtInput);
+            },
+            close: function (e) {
+                websocket.close();
+            },
+            receiveStockItem(cstockitem){
+                var self = this;
+                var stockitem = cstockitem;
+                stockitem.img = taoguba.getLogoImageUrl(stockitem.img);
+                //吐槽列表聊天不显示主贴内容；评论显示
+                if (stockitem.fromType != "TC") {
+                    if (stockitem.refContent && stockitem.refContent.length > 50) {
+                        stockitem.refContent = stockitem.refContent.substring(0, 50) + '...';
+                    } else {
+                        stockitem.refContent = stockitem.refContent;
+                    }
+                } else {
+                    stockitem.refContent = '';
+                }
+                var refreshtime = stockitem.createdt;
+                if (Math.abs(self.newDate - stockitem.createdt) >= 30 * 60 * 1000) {
+                    //默认刷新时间
+                    stockitem.newrefresh = true;
+                    self.newDate = stockitem.createdt;
+                } else {
 
-          },
-         created: function(){
-               var self = this;
-                 self.refresh();
-                  self.getOptions();
+                    stockitem.newrefresh = false;
+                }
+                stockitem.refreshtime = refreshtime;
+
+                //判断userid是否是登陆用户自己
+                if (self.loginUserId == stockitem.userID) {
+                    stockitem.selfuser = 1;
+                } else {
+                    stockitem.selfuser = 0;
+                }
+                self.feedID = stockitem.feedID;
+                stockitem.idfeedID = 'id' + stockitem.feedID;
+                self.shuoshuoArray.push(stockitem);
+//                    self.scrolltoposition = self.shuoshuoArray.length;
+                if (self.pageNo == 1) {
+                    self.$call('timer', 'setTimeout', function () {
+                        self.scrollToBottom();
+                    }, 2000);
+                }
+            }
         },
+        created: function () {
+            var self = this;
+            self.platform = self.$getConfig().env.platform;
+            console.log("self.platform :" + self.platform);
+            var skinType = this.$getConfig().skinType;
+            if (skinType == undefined) {
+                skinType = 0;
+            }
+            self.skinType = skinType;
+            //ios后续补上
+            if (self.platform === 'android') {
+                self.loginUserId = weexEventModule.getUserID();
+            }
+            if (self.platform === 'iOS') {
+                self.loginUserId = ios_event.getUserID();
+            }
 
-          ready(){
-                    var self = this;
-//                     this.$vm('sub').changeSkin('11');//调用子控件方法
-//                    globalEventModule.addEventListener("mainlist_text_day_night",function(options){
-//                            weexEventModule.ShowLogI(self.TAG,options.toString());
-//
-//                          self.$broadcast('changeSkin', {
-//                                                        "skintype": "11"
-//                                              })
-//                   });
-                },
+            console.log("self.loginUserId :" + self.loginUserId);
+//                self.refresh();
+            self.connect();
+        },
+        destroyed: function () {
+            var self = this;
+            self.close();
+        },
+        ready(){
+            var self = this;
+//             self.$call('timer','setTimeout',function(){
+//                 self.scrollToBottom();
+//             },10000);
+        },
     }
 </script>
 
 <style>
-    .refresh-view{
-        height:100px;
-        width: 750px;;
-        align-items:center;
+    .list {
+        width: 750;
     }
 
-    .indicator{
-        width: 60px;;
-        height: 60px;
-        color:#889967;
+    .list-0 {
+        background-color: #f5f5f5;
     }
 
-      .dayclass{
-           color:#666666;
-           font-size:40px;
-           font-weight:bold;
-         }
-      .nightclass{
-             color:#ff0000;
-             font-size:40px;
-             font-weight:bold;
-        }
+    .list-1 {
+        background-color: #15253d;
+    }
+
+    .loading-view {
+        width: 750;
+        height: 50wx;
+        display: -ms-flex;
+        display: -webkit-flex;
+        display: flex;
+        -ms-flex-align: center;
+        -webkit-align-items: center;
+        -webkit-box-align: center;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .loading-view-1 {
+        background-color: #15253d;
+    }
+
+    .loading-view-0 {
+        background-color: #f5f5f5;
+    }
+
+    .refresh-arrow {
+        margin-top: 10wx;
+        height: 20wx;
+        width: 200wx;
+        font-size: 12wx;
+        text-align: center;
+        align-items: center;
+    }
+
+    .refresh-arrow-0 {
+        color: #BBBBBB;
+    }
+
+    .refresh-arrow-1 {
+        color: #666666;
+    }
+
+    .refresh-view {
+        width: 750;
+        height: 80wx;
+        display: -ms-flex;
+        display: -webkit-flex;
+        display: flex;
+        -ms-flex-align: center;
+        -webkit-align-items: center;
+        -webkit-box-align: center;
+        align-items: center;
+        justify-content: center;
+
+    }
+
+    .refresh-view-0 {
+        background-color: #f5f5f5;
+    }
+
+    .refresh-view-1 {
+        background-color: #15253d;
+    }
+
+    .indicator {
+        height: 30wx;
+        width: 30wx;
+        color: #889967;
+    }
 </style>

@@ -1,188 +1,380 @@
 <template>
-   <div class="content">
-        <div class="wrapper">
-          <navbar title="{{title}}"></navbar>
-          <slider class="slider" append="tree" interval="1000" needloop="false" auto-play="false" onchange="onchange" index="{{index}}">
-                <embed class="econtent" style="visibility:{{item.visibility}}" repeat="{{item in buttomData}}" src="{{item.src}}" type="weex"></embed>
-           </slider>
-           <div class="buttom" append="tree" >
-                <div class="buttom-item" repeat="{{item in buttomData}}" onclick="{{setIndex(item.index)}}">
-                    <image class="img" src="{{item.imgUrl}}"/>
-                    <text class="{{item.itemNameColor}}">{{item.itemName}}</text>
+    <div class="content content-{{skinType}}">
+        <navbar if="{{navBar_display}}" title="{{title}}" type="{{skinType}}" shownleft="true"></navbar>
+        <slider class="slider  slider_{{platform}}" append="tree" interval="1000" needloop="false" auto-play="false"
+                onchange="onchange" index="{{index}}" offScreenPageLimit="4">
+            <stocknews id="slider_sub0"></stocknews>
+            <shuoshuo id="slider_sub1"></shuoshuo>
+            <dayanalysis id="slider_sub2"></dayanalysis>
+            <meeting-pager id="slider_sub3"></meeting-pager>
+        </slider>
+        <div class="buttom buttom-{{skinType}} buttom_{{platform}}" append="tree">
+            <div class="buttom-item" repeat="{{item in buttomData}}" onclick="{{setIndex(item.index)}}">
+                <image class="img" src="{{item.imgUrl}}"/>
+                <text class="itemTexclass {{item.itemNameColor}}-{{skinType}}">{{item.itemName}}</text>
+                <div class="pointdiv" if="{{item.reddisplay}}">
+                    <text class="rednum" if="{{redNum!=0}}"></text>
                 </div>
-           </div>
+            </div>
         </div>
-   </div>
+    </div>
 </template>
 
 <script>
-var taoguba = require('./taoguba');
- require('./stocknews/stocknews.we')
-  require('./shuoshuo/shuoshuo.we')
-  require('./dayanalysis/dayanalysis.we')
-   require('./meeting/meeting-pager.we')
-   var weexModalUIModule =  require('@weex-module/weexModalUIModule');
-   var weexEventModule =  require('@weex-module/weexEventModule');
-  require('weex-components');
-  var img0 = '//gw.alicdn.com/tps/i2/TB1DpsmMpXXXXabaXXX20ySQVXX-512-512.png_400x400.jpg';
-  var img1 = '//gw.alicdn.com/tps/i1/TB1M3sQMpXXXXakXXXXApNeJVXX-360-360.png';
-  module.exports = {
-    data: {
-      eventCnt: 0,
-      togglePlayMsg: 'pause',
-      index:0,
-      title:'股市直播',
-      platform:'unknown',
-      buttomData:[
-            {
-                index:0,
-                itemName:'股市直播',
-                imgUrl:"http://gtms01.alicdn.com/tps/i1/TB1qw.hMpXXXXagXXXX9t7RGVXX-46-46.png",
-                itemNameColor:"itemTexclass-0",
-                imgUrlSelect:"http://gtms03.alicdn.com/tps/i3/TB1LEn9MpXXXXaUXpXX9t7RGVXX-46-46.png",
-                imgUrlUnSelect:"http://gtms01.alicdn.com/tps/i1/TB1qw.hMpXXXXagXXXX9t7RGVXX-46-46.png",
-                src: taoguba.getPathUrl('stocknews/stocknews.js',false),
-                visibility: 'visible',
+    var taoguba = require('./taoguba');
+    require('./stocknews/stocknews.we')
+    require('./shuoshuo/shuoshuo.we')
+    require('./dayanalysis/dayanalysis.we')
+    require('./meeting/meeting-pager.we')
+    var weexModalUIModule = require('@weex-module/weexModalUIModule');
+    var weexEventModule = require('@weex-module/weexEventModule');
+    require('weex-components');
+    var stream = require('@weex-module/stream');
+    var modal = require('@weex-module/modal');
+    var ios_event = require('@weex-module/event');//ios用这个
+
+    module.exports = {
+        data: {
+            eventCnt: 0,
+            togglePlayMsg: 'pause',
+            index: 0,
+            title: '股市直播',
+            platform: 'web',
+            navBar_display: true,
+            skinType: 0,
+            dateTime: new Date().getTime(),
+            redNum: 0,
+            redTimeInterval: 1000 * 60 * 10,
+            buttomData: [
+                {
+                    index: 0,
+                    itemName: '股市直播',
+                    imgUrl: taoguba.getImageUrl('./images/gushizhibo_blue.png'),
+                    itemNameColor: "itemTexclass-select",
+                    imgUrlSelect: taoguba.getImageUrl('./images/gushizhibo_blue.png'),
+                    imgUrlUnSelect: taoguba.getImageUrl('./images/gushizhibo.png'),
+                    reddisplay: false
+                },
+                {
+                    index: 1,
+                    itemName: '吐槽区',
+                    imgUrl: taoguba.getImageUrl('./images/tucaoqu.png'),
+                    itemNameColor: "itemTexclass",
+                    imgUrlSelect: taoguba.getImageUrl('./images/tucaoqu_blue.png'),
+                    imgUrlUnSelect: taoguba.getImageUrl('./images/tucaoqu.png'),
+                    reddisplay: true
+                },
+                {
+                    index: 2,
+                    itemName: '每日分析',
+                    imgUrl: taoguba.getImageUrl('./images/meirifenxi.png'),
+                    itemNameColor: "itemTexclass",
+                    imgUrlSelect: taoguba.getImageUrl('./images/meirifenxi_blue.png'),
+                    imgUrlUnSelect: taoguba.getImageUrl('./images/meirifenxi.png'),
+                    reddisplay: false
+                },
+                {
+                    index: 3,
+                    itemName: '行业会议',
+                    imgUrl: taoguba.getImageUrl('./images/hangyehuiyi.png'),
+                    itemNameColor: "itemTexclass",
+                    imgUrlSelect: taoguba.getImageUrl('./images/hangyehuiyi_bule.png'),
+                    imgUrlUnSelect: taoguba.getImageUrl('./images/hangyehuiyi.png'),
+                    reddisplay: false
+                }
+            ]
+        },
+        methods: {
+            redPointrTime: function () {
+                //刷新消息
+                var self = this;
+                self.saveTime();
+
+                self.$call('timer', 'setInterval', function () {
+                    if (self.index != 1) {
+                        self.getRedPoint();
+                    }
+                }, self.redTimeInterval);
             },
-            {
-                index:1,
-                itemName:'吐槽区',
-                imgUrl:"http://gtms01.alicdn.com/tps/i1/TB1qw.hMpXXXXagXXXX9t7RGVXX-46-46.png",
-                itemNameColor:"itemTexclass-0",
-                imgUrlSelect:"http://gtms03.alicdn.com/tps/i3/TB1LEn9MpXXXXaUXpXX9t7RGVXX-46-46.png",
-                imgUrlUnSelect:"http://gtms01.alicdn.com/tps/i1/TB1qw.hMpXXXXagXXXX9t7RGVXX-46-46.png",
-                src: taoguba.getPathUrl('shuoshuo/shuoshuo.js',false),
-                visibility: 'hidden',
+            saveTime: function () {
+                var self = this;
+                if (self.platform == 'android') {
+                    var redPoint = weexEventModule.getString2('redPointTime');
+                    if (Math.abs(self.dateTime - redPoint) >= self.redTimeInterval) {
+                        self.redNum = 1;
+                        weexEventModule.putString('redPointTime', self.dateTime + '');
+                    } else {
+                        self.redNum = 0;
+                    }
+                }
+                else {
+                    var storage = require('@weex-module/storage');
+                    storage.getItem('redPointTime', function (e) {
+                        var redPoint = e['result'] == 'failed' ? 0 : e['data'];
+                        if (Math.abs(self.dateTime - redPoint) >= self.redTimeInterval) {
+                            self.redNum = 1;
+                            storage.setItem('redPointTime', self.dateTime + '', function (e) {
+                                console.log('SP set redPointTime:' + JSON.stringify(e));
+                            });
+                        } else {
+                            self.redNum = 0;
+                        }
+                    });
+                }
             },
-            {
-                index:2,
-                itemName:'每日分析',
-                imgUrl:"http://gtms01.alicdn.com/tps/i1/TB1qw.hMpXXXXagXXXX9t7RGVXX-46-46.png",
-                itemNameColor:"itemTexclass-0",
-                imgUrlSelect:"http://gtms03.alicdn.com/tps/i3/TB1LEn9MpXXXXaUXpXX9t7RGVXX-46-46.png",
-                imgUrlUnSelect:"http://gtms01.alicdn.com/tps/i1/TB1qw.hMpXXXXagXXXX9t7RGVXX-46-46.png",
-                src: taoguba.getPathUrl('dayanalysis/dayanalysis.js',false),
-                visibility: 'hidden',
+            getRedPoint: function () {
+                console.log('getRedPoint');
+                //刷新消息
+                var self = this;
+                self.dateTime = new Date().getTime();
+                var url = taoguba.apiGetRedPoint();
+                var body = {};
+
+                if (self.platform == 'iOS' || self.platform == 'android') {
+                    body.url = url;
+                    body.dateTime = self.dateTime;
+                }
+                stream.fetch({
+                        method: 'GET',
+                        url: url + 'dateTime=' + self.dateTime,
+                        body: body,
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            token: taoguba.getToken(),
+                        }
+                    },
+                    function (ret) {
+                        var result = JSON.stringify(ret);
+                        // console.log('slider-pager==' + result);
+                        if (!ret.ok) {
+//                   modal.toast({"message":"Network Error!",'duration':2}); 
+                        } else {
+                            var json = ret.data;
+                            //是String类型才解析
+                            if (json && typeof(json) != 'object') {
+                                try {
+                                    json = eval('(' + ret.data + ')');
+                                } catch (e) {
+                                }
+
+                            }
+                            var resultStatus;
+                            if (typeof window === 'object' || self.platform == 'iOS') {
+                                if (json && json.status == true) {
+                                    resultStatus = '1';
+                                } else {
+                                    resultStatus = '0';
+                                }
+                            } else {
+                                resultStatus = weexEventModule.isStatus(json.errorCode, json.status);
+                            }
+                            // console.log('SP_resultStatus=='+resultStatus);
+
+                            if (resultStatus == '1') {
+                                if (json.dto) {
+                                    self.saveTime();
+                                } else {
+                                    self.redNum = 0;
+                                }
+                            } else {
+                                self.redNum = 0;
+                                if (typeof window == 'object') {
+                                    //console.log(json.errorMessage);
+                                } else {
+                                    //weexModalUIModule.toast(json.errorMessage);
+                                }
+                            }
+
+                        }
+                    },
+                    function (res) {
+                    }
+                );
             },
-             {
-               index:3,
-               itemName:'行业会议',
-               imgUrl:"http://gtms01.alicdn.com/tps/i1/TB1qw.hMpXXXXagXXXX9t7RGVXX-46-46.png",
-               itemNameColor:"itemTexclass-0",
-               imgUrlSelect:"http://gtms03.alicdn.com/tps/i3/TB1LEn9MpXXXXaUXpXX9t7RGVXX-46-46.png",
-               imgUrlUnSelect:"http://gtms01.alicdn.com/tps/i1/TB1qw.hMpXXXXagXXXX9t7RGVXX-46-46.png",
-               src: taoguba.getPathUrl('meeting/meeting-pager.js',false),
-               visibility: 'hidden',
-            }
-      ]
-    },
-    methods: {
-      onchange: function(params) {
+            onchange: function (params) {
                 var index = params.index;
                 var tabItem = this.buttomData[index];
                 this.title = tabItem.itemName;
                 this.setIndex(index);
-                if('android' == this.platform ){
-                    weexEventModule.setOnDrawerBackEnabled(''+index);
+
+                if ('android' == this.platform) {
+                    weexEventModule.setOnDrawerBackEnabled('' + index);
                 }
-      },
-      setIndex :function(index) {
-            this.index = index;
-            for(var i = 0; i < this.buttomData.length; i++) {
-                var tabItem = this.buttomData[i];
-                if(i == index){
-                  tabItem.imgUrl = tabItem.imgUrlSelect;
-                  tabItem.itemNameColor = "itemTexclass-select-0";
-                  tabItem.visibility = 'visible';
-                }else {
-                  tabItem.imgUrl = tabItem.imgUrlUnSelect;
-                  tabItem.itemNameColor = this.itemNameColor;
-                  tabItem.visibility = 'hidden';
+                if ('iOS' == this.platform) {
+                    var event_ios = require('@weex-module/event');
+                    event_ios.setNavbarTitle(this.title);
+                }
+            },
+            setIndex: function (index) {
+                if (index == 1) {
+                    if(this.redNum>0){
+                        this.$vm('slider_sub1').scrollToBottom();
+                    }
+                    this.redNum = 0;
+                    if (this.platform == 'android') {
+                        weexEventModule.putString('redPointTime', new Date().getTime() + '');
+                    }
+                    else {
+                        var storage = require('@weex-module/storage');
+                        storage.setItem('redPointTime', new Date().getTime() + '', function (e) {
+                            console.log('SP set redPointTime:' + JSON.stringify(e));
+                        });
+                    }
+                }
+                this.index = index;
+                for (var i = 0; i < this.buttomData.length; i++) {
+                    var tabItem = this.buttomData[i];
+                    if (i == index) {
+                        tabItem.imgUrl = tabItem.imgUrlSelect;
+                        tabItem.itemNameColor = "itemTexclass-select";
+                        if (i > 0 && this.$vm('slider_sub' + i).isFirst == 1) {
+                            if (i < 3) {
+                                this.$vm('slider_sub' + i).autoRefresh();
+                            } else {
+                                this.$vm('slider_sub' + i).setIndex(0);
+                                this.$vm('slider_sub' + i).isFirst = 0;
+                            }
+                        }
+                    } else {
+                        tabItem.imgUrl = tabItem.imgUrlUnSelect;
+                        tabItem.itemNameColor = 'itemTexclass';
+                    }
+                }
             }
-          }
-      }
-    },
-    created(){
+        },
+        created: function () {
             this.platform = this.$getConfig().env.platform;
-    },
-     ready(){
-        this.index = 0;
-        this.setIndex(this.index);
-     },
-  };
+            var cskinType = this.$getConfig().skinType;
+            ;
+            if (this.platform == 'iOS') {
+            } else if (this.platform == 'android') {
+            } else {
+                cskinType = taoguba.getUrlParam('skinType');
+            }
+            if (cskinType == undefined) {
+                cskinType = 0;
+            }
+            this.skinType = cskinType;
+            if (this.platform == 'iOS') {
+                this.screenHeight = this.$getConfig().env.deviceHeight / this.$getConfig().env.scale - 64;
+                this.navBar_display = false;
+                var event_ios = require('@weex-module/event');
+                event_ios.setNavbarTitle(this.title);
+            }
+
+            this.redPointrTime();
+        },
+        ready(){
+//        this.index = 0;
+//        this.setIndex(this.index);
+        },
+    };
 </script>
 
 <style>
-.wrapper {
-        width: 750;
+    .pointdiv {
+        align-items: flex-start;
+        justify-content: flex-start;
+        height: 50wx;
+        width: 15wx;
+    }
+
+    .rednum {
+        background-color: #ff0000;
+        width: 10wx;
+        height: 10wx;
+        border-radius: 30;
+        top: 15;
+        left: 5;
+    }
+
+    .slider {
         position: absolute;
+        flex-direction: row;
+        width: 750;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
+        margin-top: 45wx;
+        margin-bottom: 50wx;
     }
- .econtent {
-        width: 750;
-        position: absolute;
-        top: 0; left: 0;
-        right: 0;
-        bottom: 0;
-        margin-top: 0;
-        margin-bottom: 88;
-    }
-  .slider {
-    position: absolute;
-    flex-direction: row;
-    width: 750;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    margin-top: 45wx;
-    margin-bottom: 50wx;
- }
-.content{
-  flex-direction:column;
-  width: 750;
-}
-.buttom{
-  width: 750;
-  height:50wx;
-  flex: 1;
-  flex-direction: row;
-  justify-content:flex-end;
-  background-color: #eeeeee;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-}
-.buttom-item{
-    flex: 1;
 
-    flex-direction: row;
-    align-items: center;
-    justify-content:center;
-}
-.img{
-    width: 20wx;
-    height: 20wx;
-}
-.itemTexclass{
-    margin-left: 5wx;
-    font-size: 13wx;
-    color: #666666;
-}
-.itemTexclass-0{
-    color: #666666;
-}
-.itemTexclass-select-0{
-    color: #00BDFF;
-}
-.itemTexclass-1{
-    color: #666666;
-}
-.itemTexclass-select-1{
-    color: #666666;
-}
+    .slider_iOS {
+        top: -45wx;
+        bottom: 60wx;
+    }
+
+    .content {
+        flex-direction: column;
+        width: 750;
+    }
+
+    .content-0 {
+        background-color: #F6F6F6;
+    }
+
+    .content-1 {
+        background-color: #15253d;
+    }
+
+    .buttom {
+        width: 750;
+        height: 50wx;
+        flex: 1;
+        flex-direction: row;
+        justify-content: flex-end;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+    }
+
+    .buttom-0 {
+        background-color: #eeeeee;
+    }
+
+    .buttom-1 {
+        background-color: #192c46;
+    }
+
+    .buttom_iOS {
+        bottom: 60wx;
+    }
+
+    .buttom-item {
+        flex: 1;
+
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .img {
+        width: 22wx;
+        height: 18wx;
+        padding: 1wx;
+    }
+
+    .itemTexclass {
+        margin-left: 1wx;
+        font-size: 13wx;
+        color: #666666;
+    }
+
+    .itemTexclass-0 {
+        color: #555555;
+    }
+
+    .itemTexclass-1 {
+        color: #999999;
+    }
+
+    .itemTexclass-select-0 {
+        color: #1191f6;
+    }
+
+    .itemTexclass-select-1 {
+        color: #1191f6;
+    }
 </style>
